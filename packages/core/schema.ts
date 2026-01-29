@@ -40,6 +40,9 @@ type Feedback<
   ) => AsyncGenerator<[number, number] | keyof S, R[K]>;
 };
 
+type FeedbackPayload<F extends Feedback<any, any, any>, K extends keyof F> =
+  ReturnType<F[K]> extends AsyncGenerator<any, infer P> ? P : never;
+
 type Schema<
   N extends string,
   Q extends z.ZodRawShape,
@@ -80,9 +83,7 @@ export function createModel<
       q: z.output<typeof question>,
       part: Part<S, K>,
       previous: Part<S>[],
-    ): Promise<
-      ReturnType<F[K]> extends AsyncGenerator<any, infer R> ? R : never
-    > {
+    ): Promise<FeedbackPayload<F, K>> {
       const feedback = schema.feedback[part.step](q, part.state, previous);
       let chunk;
       do {
@@ -112,3 +113,12 @@ export function createModel<
       }),
   };
 }
+
+export type Props<S extends Schema<any, any, any, any>> = {
+  [K in keyof S["steps"]]: {
+    question: z.output<z.ZodObject<S["question"], z.core.$strip>>;
+    part: Part<S["steps"], K>;
+    attempt: Part<S["steps"]>[];
+    feedback: () => Promise<FeedbackPayload<S["feedback"], K>>;
+  };
+};

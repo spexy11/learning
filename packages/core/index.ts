@@ -1,1 +1,1 @@
-export { createModel, defineSchema } from "./schema";
+export { createModel, defineSchema, type Props } from "./schema";
