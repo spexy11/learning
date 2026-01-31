@@ -114,11 +114,20 @@ export function createModel<
   };
 }
 
-export type Props<S extends Schema<any, any, any, any>> = {
-  [K in keyof S["steps"]]: {
+type MakeOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+type SchemaProps<S extends Schema<any, any, any, any>> = {
+  [K in keyof S["steps"]]: MakeOptional<Part<S["steps"], K>, "state"> & {
     question: z.output<z.ZodObject<S["question"], z.core.$strip>>;
-    part: Part<S["steps"], K>;
     attempt: Part<S["steps"]>[];
-    feedback: () => Promise<FeedbackPayload<S["feedback"], K>>;
+    feedback: Promise<FeedbackPayload<S["feedback"], K> | undefined>;
   };
-};
+}[keyof S["steps"]];
+
+export type Props<M> = M extends {
+  default: infer S extends Schema<any, any, any, any>;
+}
+  ? SchemaProps<S>
+  : M extends Schema<any, any, any, any>
+    ? SchemaProps<M>
+    : never;

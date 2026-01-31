@@ -1,0 +1,7 @@
+{
+  "name": "@learning/symapi",
+  "private": true,
+  "scripts": {
+    "dev": "uv run fastapi dev main.py"
+  }
+}
