@@ -1,5 +1,20 @@
-import { mapAsync } from "es-toolkit";
+import { sampleSize, mapAsync, sample, mapValues } from "es-toolkit";
+import { get } from "es-toolkit/compat";
 import z from "zod/v4";
+
+const latex = z.string().or(z.number());
+
+export const params = z
+  .record(
+    z.string(),
+    z.union([
+      latex.array().transform((values) => sample(values)),
+      z
+        .tuple([z.literal("sampleSize"), latex.array().nonempty(), z.number()])
+        .transform(([_, arr, size]) => sampleSize(arr, size)),
+    ]),
+  )
+  .optional();
 
 function partSchema<const S extends Record<string, z.ZodRawShape>>(steps: S) {
   return z.union(
@@ -29,12 +44,12 @@ type Part<
 > = Extract<z.infer<PartSchema<S>>, { step: K }>;
 
 type Feedback<
-  Q extends z.ZodRawShape,
+  Q extends z.ZodType<object, any, any>,
   S extends Record<string, z.ZodRawShape>,
   R extends Record<keyof S, any>,
 > = {
   [K in keyof S]: (
-    question: z.infer<z.ZodObject<Q, z.core.$strip>>,
+    question: z.infer<Q>,
     state: Part<S, K>["state"],
     attempt: Part<S>[],
   ) => AsyncGenerator<[number, number] | keyof S, R[K]>;
@@ -45,7 +60,7 @@ type FeedbackPayload<F extends Feedback<any, any, any>, K extends keyof F> =
 
 type Schema<
   N extends string,
-  Q extends z.ZodRawShape,
+  Q extends z.ZodType<object, any, any>,
   S extends Record<string, z.ZodRawShape>,
   F extends Feedback<Q, S, any>,
 > = {
@@ -57,7 +72,7 @@ type Schema<
 
 export function defineSchema<
   const N extends string,
-  const Q extends z.ZodRawShape,
+  const Q extends z.ZodType<object, any, any>,
   const S extends Record<string, z.ZodRawShape>,
   const F extends Feedback<Q, S, any>,
 >(schema: Schema<N, Q, S, F>) {
@@ -66,18 +81,13 @@ export function defineSchema<
 
 export function createModel<
   const N extends string,
-  const Q extends z.ZodRawShape,
+  const Q extends z.ZodType<object, any, any>,
   const S extends Record<string, z.ZodRawShape>,
   const F extends Feedback<Q, S, any>,
 >(schema: Schema<N, Q, S, F>) {
   const name = z.literal(schema.name);
-  const question = z.object(schema.question);
+  const question = schema.question;
   const attempt = partSchema(schema.steps).array().default([]);
-  const generated = z
-    .custom<
-      () => Promise<z.input<typeof question>>
-    >((fn) => typeof fn === "function" && fn.length === 0)
-    .transform(async (fn) => await question.parseAsync(await fn()));
   return {
     async feedback<K extends keyof S>(
       q: z.output<typeof question>,
@@ -92,11 +102,25 @@ export function createModel<
       return chunk.value;
     },
     schema: z
-      .object({ name, question: question.or(generated), attempt })
+      .object({ name, params, question, attempt })
       .transform(async (data) => {
+        // @ts-ignore Zod incorrectly says question does not exist
+        let question: z.output<Q> = data.question;
+        if (data.params) {
+          question = await schema.question.parseAsync(
+            mapValues(question, (v) => {
+              if (typeof v !== "string") return v;
+              return v.replace(/\`([\w\.]+)\`/g, (_: string, path: string) => {
+                const value = get(data.params, path);
+                return value ? String(value) : _
+              });
+            }),
+          );
+          delete data.params
+        }
         const attempt = await mapAsync(data.attempt, async (part, i) => {
           const feedback = schema.feedback[part.step](
-            data.question,
+            question,
             part.state,
             data.attempt.slice(0, i),
           );
@@ -109,25 +133,7 @@ export function createModel<
           }
           return { ...part, score, next };
         });
-        return { ...data, attempt };
+        return { ...data, question, attempt };
       }),
   };
 }
-
-type MakeOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
-
-type SchemaProps<S extends Schema<any, any, any, any>> = {
-  [K in keyof S["steps"]]: MakeOptional<Part<S["steps"], K>, "state"> & {
-    question: z.output<z.ZodObject<S["question"], z.core.$strip>>;
-    attempt: Part<S["steps"]>[];
-    feedback: Promise<FeedbackPayload<S["feedback"], K> | undefined>;
-  };
-}[keyof S["steps"]];
-
-export type Props<M> = M extends {
-  default: infer S extends Schema<any, any, any, any>;
-}
-  ? SchemaProps<S>
-  : M extends Schema<any, any, any, any>
-    ? SchemaProps<M>
-    : never;
