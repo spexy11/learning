@@ -54,9 +54,9 @@ test("grading works", async () => {
         state: { attempt: "(x - 1)(x - 2)" },
       },
     ],
-  } satisfies Input;
+  } as const satisfies Input;
   const attempt = [
-    { ...input.attempt[0]!, next: null, score: [1, 1] as [number, number] },
+    { ...input.attempt[0], next: null, score: [1, 1] as [number, number]},
   ];
   const exercise = await model.schema.parseAsync(input);
   expect(exercise.attempt).toEqual(attempt);
