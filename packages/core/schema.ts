@@ -1,5 +1,6 @@
 import { sampleSize, mapAsync, sample, mapValues } from "es-toolkit";
 import { get } from "es-toolkit/compat";
+import type { Component } from "solid-js";
 import z from "zod/v4";
 
 const latex = z.string().or(z.number());
@@ -38,7 +39,7 @@ function partSchema<const S extends Record<string, z.ZodRawShape>>(steps: S) {
 type PartSchema<S extends Record<string, z.ZodRawShape>> = ReturnType<
   typeof partSchema<S>
 >;
-type Part<
+export type Part<
   S extends Record<string, z.ZodRawShape>,
   K extends keyof S = keyof S,
 > = Extract<z.infer<PartSchema<S>>, { step: K }>;
@@ -55,13 +56,15 @@ type Feedback<
   ) => AsyncGenerator<[number, number] | keyof S, R[K]>;
 };
 
-type FeedbackPayload<F extends Feedback<any, any, any>, K extends keyof F> =
-  ReturnType<F[K]> extends AsyncGenerator<any, infer P> ? P : never;
+export type FeedbackPayload<
+  F extends Feedback<any, any, any>,
+  K extends keyof F,
+> = ReturnType<F[K]> extends AsyncGenerator<any, infer P> ? P : never;
 
-type Schema<
+export type Schema<
   N extends string,
   Q extends z.ZodType<object, any, any>,
-  S extends Record<string, z.ZodRawShape>,
+  S extends Record<string, z.ZodRawShape> & { start: any },
   F extends Feedback<Q, S, any>,
 > = {
   name: N;
@@ -73,7 +76,7 @@ type Schema<
 export function defineSchema<
   const N extends string,
   const Q extends z.ZodType<object, any, any>,
-  const S extends Record<string, z.ZodRawShape>,
+  const S extends Record<string, z.ZodRawShape> & { start: any },
   const F extends Feedback<Q, S, any>,
 >(schema: Schema<N, Q, S, F>) {
   return schema;
@@ -82,7 +85,7 @@ export function defineSchema<
 export function createModel<
   const N extends string,
   const Q extends z.ZodType<object, any, any>,
-  const S extends Record<string, z.ZodRawShape>,
+  const S extends Record<string, z.ZodRawShape> & { start: any },
   const F extends Feedback<Q, S, any>,
 >(schema: Schema<N, Q, S, F>) {
   const name = z.literal(schema.name);
@@ -112,11 +115,11 @@ export function createModel<
               if (typeof v !== "string") return v;
               return v.replace(/\`([\w\.]+)\`/g, (_: string, path: string) => {
                 const value = get(data.params, path);
-                return value ? String(value) : _
+                return value ? String(value) : _;
               });
             }),
           );
-          delete data.params
+          delete data.params;
         }
         const attempt = await mapAsync(data.attempt, async (part, i) => {
           const feedback = schema.feedback[part.step](
@@ -133,7 +136,7 @@ export function createModel<
           }
           return { ...part, score, next };
         });
-        return { ...data, question, attempt };
+        return { name: data.name as N, question, attempt };
       }),
   };
 }

@@ -10,6 +10,7 @@
     "typescript": "^5"
   },
   "catalog": {
+    "solid-js": "^1.9.11",
     "zod": "^4.3.6"
   },
   "scripts": {

@@ -29,9 +29,7 @@ export function expr(input: string | MathJson) {
       expr(["Integrate", json, ...integrateParams.parse(params)]),
     isEqual: (expr: string | MathJson) =>
       symapi.expr.equal({ expr1: json, expr2: getMathJson(expr) }),
-    isFactored: async () => {
-      return true;
-    },
+    isFactored: () => symapi.expr.isFactored({ expr: json }),
     latex: () => symapi.expr.latex({ expr: json }),
   };
 }
