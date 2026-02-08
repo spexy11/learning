@@ -11,13 +11,13 @@ import {
   For,
   lazy,
   Show,
+  splitProps,
   type Component,
-  type ComponentProps,
-  type JSX,
 } from "solid-js";
-import { createStore } from "solid-js/store/types/server.js";
 import type z from "zod/v4";
 import { mapValues } from "es-toolkit";
+import { createStore } from "solid-js/store";
+import { type Action } from "@solidjs/router";
 
 export type Props<T extends Schema<any, any, any, any>> = z.output<
   ReturnType<
@@ -39,8 +39,16 @@ export type View<T extends Schema<any, any, any, any>> = {
   [K in keyof T["steps"]]: Component<StepProps<T, K>>;
 };
 
-function createComponent<T extends Schema<any, any, any, any>>(view: View<T>) {
-  return function ExerciseComponent(props: Props<T>) {
+type Submit = Action<
+  [{ question: object, attempt: { step: string, state: object }[] }, string, FormData],
+  any
+>;
+
+function createComponent<T extends Schema<any, any, any, any>>(
+  view: View<T>,
+): Component<Props<T> & { action: Submit }> {
+  return function ExerciseComponent(fullProps) {
+    const [others, props] = splitProps(fullProps, ["action"]);
     const next = createMemo(() => {
       const lastPart = props.attempt.at(-1);
       return lastPart ? lastPart.next : "start";
@@ -66,8 +74,13 @@ function createComponent<T extends Schema<any, any, any, any>>(view: View<T>) {
           )}
         </For>
         <Show when={next()}>
-          {/* @ts-ignore */}
-          <Dynamic component={view[next()!]} question={props.question} />
+          <form
+            method="post"
+            action={others.action.with(props, next() as string)}
+          >
+            <h3>Étape {attempt.length + 1}</h3>
+            <Dynamic component={view[next() as string]} question={props.question} />
+          </form>
         </Show>
       </>
     );
@@ -82,7 +95,9 @@ type Module<T extends Schema<any, any, any, any>> = {
 type Register = Record<string, () => Promise<Module<any>>>;
 type GlobalProps<R extends Register> = {
   [K in keyof R]: Props<Awaited<ReturnType<R[K]>>["schema"]>;
-}[keyof R];
+}[keyof R] & {
+  action: Submit
+};
 
 export function createExerciseComponent<const R extends Register>(
   register: R,
@@ -93,10 +108,14 @@ export function createExerciseComponent<const R extends Register>(
       return { default: createComponent<typeof module.schema>(module.default) };
     });
   });
-  return (props) => (
-    <Dynamic
-      component={components[props.name] as Component<GlobalProps<R>>}
-      {...props}
-    />
-  );
+  return (fullProps) => {
+    const [form, props] = splitProps(fullProps, ["action"]);
+    return (
+      <Dynamic
+        component={components[props.name] as Component<GlobalProps<R>>}
+        {...props}
+        action={form.action}
+      />
+    );
+  };
 }

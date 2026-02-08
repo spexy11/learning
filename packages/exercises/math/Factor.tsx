@@ -36,7 +36,7 @@ export default {
       <p>
         Factorisez <strong>complètement</strong> {props.question.expr}.
       </p>
-      <input value={props.state?.attempt} />
+      <input name="attempt" value={props.state?.attempt} />
       {props.feedback?.correct}
     </>
   ),

@@ -38,7 +38,7 @@ function makeProxy<const P extends string>(prefix: P) {
       return makeProxy(`${prefix}/${attr}`);
     },
     async apply(_, __, params: any) {
-      const res = await fetch(`${BASE_URL}/${prefix}`, {
+      const res = await fetch(`${BASE_URL}${prefix}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(params[0]),

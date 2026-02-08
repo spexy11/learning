@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@learning/core": "workspace:",
+    "@solidjs/router": "^0.15.4",
     "solid-js": "catalog:",
     "zod": "catalog:"
   },

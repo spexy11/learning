@@ -1,6 +1,5 @@
 import { sampleSize, mapAsync, sample, mapValues } from "es-toolkit";
 import { get } from "es-toolkit/compat";
-import type { Component } from "solid-js";
 import z from "zod/v4";
 
 const latex = z.string().or(z.number());
