@@ -39,8 +39,16 @@ export type View<T extends Schema<any, any, any, any>> = {
   [K in keyof T["steps"]]: Component<StepProps<T, K>>;
 };
 
-type Submit = Action<
-  [{ question: object, attempt: { step: string, state: object }[] }, string, FormData],
+export type Submit = Action<
+  [
+    {
+      name: string;
+      question: object;
+      attempt: { step: string; state: object }[];
+    },
+    string,
+    FormData,
+  ],
   any
 >;
 
@@ -79,7 +87,10 @@ function createComponent<T extends Schema<any, any, any, any>>(
             action={others.action.with(props, next() as string)}
           >
             <h3>Étape {attempt.length + 1}</h3>
-            <Dynamic component={view[next() as string]} question={props.question} />
+            <Dynamic
+              component={view[next() as string]}
+              question={props.question}
+            />
           </form>
         </Show>
       </>
@@ -93,10 +104,11 @@ type Module<T extends Schema<any, any, any, any>> = {
 };
 
 type Register = Record<string, () => Promise<Module<any>>>;
+type RegisterSchema<R extends Register, K extends keyof R> = Awaited<ReturnType<R[K]>>['schema']
 type GlobalProps<R extends Register> = {
-  [K in keyof R]: Props<Awaited<ReturnType<R[K]>>["schema"]>;
+  [K in keyof R]: Props<RegisterSchema<R, K>>
 }[keyof R] & {
-  action: Submit
+  action: Submit;
 };
 
 export function createExerciseComponent<const R extends Register>(
