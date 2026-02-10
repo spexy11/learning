@@ -17,7 +17,7 @@ import {
 import type z from "zod/v4";
 import { mapValues } from "es-toolkit";
 import { createStore } from "solid-js/store";
-import { type Action } from "@solidjs/router";
+import { createAsync, useSubmission, type Action } from "@solidjs/router";
 
 export type Props<T extends Schema<any, any, any, any>> = z.output<
   ReturnType<
@@ -52,34 +52,71 @@ export type Submit = Action<
   any
 >;
 
+export type Feedback<T extends Schema<any, any, any, any>> = <
+  K extends keyof T["steps"],
+>(
+  question: z.output<T["question"]>,
+  part: Part<T, K>,
+  previous: Part<T>[],
+) => Promise<FeedbackPayload<T["feedback"], K>>;
+
+type FinalComponent<T extends Schema<any, any, any, any>> = Component<
+  Props<T> & {
+    action: Submit;
+    feedback: Feedback<T>;
+  }
+>;
+
 function createComponent<T extends Schema<any, any, any, any>>(
   view: View<T>,
-): Component<Props<T> & { action: Submit }> {
+): FinalComponent<T> {
   return function ExerciseComponent(fullProps) {
     const [others, props] = splitProps(fullProps, ["action"]);
-    const next = createMemo(() => {
-      const lastPart = props.attempt.at(-1);
-      return lastPart ? lastPart.next : "start";
-    });
 
+    const submitting = useSubmission(others.action);
     const [attempt, setAttempt] = createStore(props.attempt);
     createEffect(() => setAttempt(props.attempt));
+    createEffect(() => {
+      if (submitting.pending) {
+        const [_, step, form] = submitting.input;
+        const state = Object.fromEntries(form.entries());
+        setAttempt((current) => [
+          ...current,
+          { step, state, next: null, score: [0, 0] },
+        ] as any);
+      }
+    });
+
+    const next = createMemo(() => {
+      const lastPart = attempt[attempt.length - 1];
+      return lastPart !== undefined ? lastPart.next : "start";
+    });
 
     return (
       <>
         <For each={attempt}>
-          {(part, i) => (
-            <div>
-              <h3>Étape {i() + 1}</h3>
-              <Dynamic
-                component={
-                  view[part.step] as Component<StepProps<T, typeof part.step>>
-                }
-                question={props.question}
-                {...part}
-              />
-            </div>
-          )}
+          {(part, i) => {
+            const feedback = createAsync(() =>
+              props.feedback(
+                props.question,
+                part as Part<T, typeof part.step>,
+                attempt.splice(0, i()),
+              ),
+            );
+            return (
+              <div>
+                <h3>Étape {i() + 1}</h3>
+                <Dynamic
+                  component={
+                    view[part.step] as Component<StepProps<T, typeof part.step>>
+                  }
+                  question={props.question}
+                  feedback={feedback()}
+                  {...part}
+                />
+              </div>
+            );
+          }}
         </For>
         <Show when={next()}>
           <form
@@ -103,12 +140,29 @@ type Module<T extends Schema<any, any, any, any>> = {
   default: View<T>;
 };
 
-type Register = Record<string, () => Promise<Module<any>>>;
-type RegisterSchema<R extends Register, K extends keyof R> = Awaited<ReturnType<R[K]>>['schema']
-type GlobalProps<R extends Register> = {
-  [K in keyof R]: Props<RegisterSchema<R, K>>
+export type Register = Record<string, () => Promise<Module<any>>>;
+
+export type RegisterSchema<R extends Register, K extends keyof R> = Awaited<
+  ReturnType<R[K]>
+>["schema"];
+
+export type RegisterFeedback<R extends Register> = <
+  N extends keyof R,
+  K extends keyof RegisterSchema<R, N>["steps"],
+>(
+  name: N,
+  question: Extract<GlobalProps<R>, { name: N }>["question"],
+  part: Part<RegisterSchema<R, N>, K>,
+  previous: z.infer<
+    RegisterSchema<R, N>["steps"][keyof RegisterSchema<R, N>["steps"]]["state"]
+  >[],
+) => Promise<FeedbackPayload<RegisterSchema<R, N>["feedback"], K>>;
+
+export type GlobalProps<R extends Register> = {
+  [K in keyof R]: Props<RegisterSchema<R, K>>;
 }[keyof R] & {
   action: Submit;
+  feedback: RegisterFeedback<R>;
 };
 
 export function createExerciseComponent<const R extends Register>(
@@ -124,9 +178,16 @@ export function createExerciseComponent<const R extends Register>(
     const [form, props] = splitProps(fullProps, ["action"]);
     return (
       <Dynamic
-        component={components[props.name] as Component<GlobalProps<R>>}
+        component={
+          components[props.name] as FinalComponent<
+            RegisterSchema<R, typeof props.name>
+          >
+        }
         {...props}
         action={form.action}
+        feedback={(question, part, previous) =>
+          props.feedback(props.name, question, part, previous)
+        }
       />
     );
   };

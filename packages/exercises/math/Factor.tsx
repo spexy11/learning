@@ -38,6 +38,7 @@ export default {
       </p>
       <input name="attempt" value={props.state?.attempt} />
       {props.feedback?.correct}
+      <pre>{JSON.stringify(props.feedback, null, 2)}</pre>
     </>
   ),
 } satisfies View<typeof schema>;

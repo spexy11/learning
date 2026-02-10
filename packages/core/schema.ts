@@ -91,12 +91,23 @@ export function createModel<
   const question = schema.question;
   const attempt = partSchema(schema.steps).array().default([]);
   return {
+    feedback2: z.object({ name, question, attempt }).transform(async (data) => {
+      // @ts-ignore Zod incorrectly says question does not exist
+      let question: z.output<Q> = data.question;
+      const [part, previous] = [data.attempt.at(-1)!, data.attempt.slice(0, -1)]
+      const feedback = schema.feedback[part.step](question, part.state, previous);
+      let chunk;
+      do {
+        chunk = await feedback.next();
+      } while (!chunk.done);
+      return chunk.value;
+    }),
     async feedback<K extends keyof S>(
-      q: z.output<typeof question>,
+      question: z.output<Q>,
       part: Part<S, K>,
       previous: Part<S>[],
     ): Promise<FeedbackPayload<F, K>> {
-      const feedback = schema.feedback[part.step](q, part.state, previous);
+      const feedback = schema.feedback[part.step](question, part.state, previous);
       let chunk;
       do {
         chunk = await feedback.next();

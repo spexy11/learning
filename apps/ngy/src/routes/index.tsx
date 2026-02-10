@@ -15,7 +15,6 @@ export default function Home() {
         question={{ expr: "x^2 - 5x + 6" }}
         attempt={[]}
       />
-      <button>Submit</button>
     </main>
   );
 }
