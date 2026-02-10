@@ -8,7 +8,7 @@ const submit = action(async (exercise, step, form) => {
 
 export default function Home() {
   return (
-    <main class="bg-white text-center mx-auto text-gray-700 p-4">
+    <main class="container bg-white mx-auto text-gray-700 p-4">
       <Exercise
         action={submit}
         name="math/factor"

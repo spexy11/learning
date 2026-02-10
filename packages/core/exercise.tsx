@@ -80,10 +80,10 @@ function createComponent<T extends Schema<any, any, any, any>>(
       if (submitting.pending) {
         const [_, step, form] = submitting.input;
         const state = Object.fromEntries(form.entries());
-        setAttempt((current) => [
-          ...current,
-          { step, state, next: null, score: [0, 0] },
-        ] as any);
+        setAttempt(
+          (current) =>
+            [...current, { step, state, next: null, score: [0, 0] }] as any,
+        );
       }
     });
 
@@ -106,14 +106,18 @@ function createComponent<T extends Schema<any, any, any, any>>(
             return (
               <div>
                 <h3>Étape {i() + 1}</h3>
-                <Dynamic
-                  component={
-                    view[part.step] as Component<StepProps<T, typeof part.step>>
-                  }
-                  question={props.question}
-                  feedback={feedback()}
-                  {...part}
-                />
+                <fieldset disabled>
+                  <Dynamic
+                    component={
+                      view[part.step] as Component<
+                        StepProps<T, typeof part.step>
+                      >
+                    }
+                    question={props.question}
+                    feedback={feedback()}
+                    {...part}
+                  />
+                </fieldset>
               </div>
             );
           }}
@@ -128,6 +132,7 @@ function createComponent<T extends Schema<any, any, any, any>>(
               component={view[next() as string]}
               question={props.question}
             />
+            <button>Submit</button>
           </form>
         </Show>
       </>
