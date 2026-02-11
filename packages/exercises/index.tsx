@@ -5,7 +5,7 @@ import {
 } from "@learning/core";
 import z from "zod";
 import { schema as mathFactorSchema } from "./math/Factor";
-import { action, type Action as RouterAction } from "@solidjs/router";
+import { action } from "@solidjs/router";
 import type { ComponentProps } from "solid-js";
 
 const modules = {
@@ -16,21 +16,8 @@ export const schema = z.discriminatedUnion("name", [
   createModel(mathFactorSchema).schema,
 ]);
 
-export type Action = RouterAction<
-  [
-    {
-      name: string;
-      question: object;
-      attempt: { step: string; state: object }[];
-    },
-    string,
-    FormData,
-  ],
-  any
->;
-
 export async function grade(
-  exercise: { attempt: unknown[] },
+  exercise: z.input<typeof schema>,
   step: string,
   form: FormData,
 ) {
@@ -43,10 +30,10 @@ export async function grade(
   return graded;
 }
 
-const submit = action(async (exercise, step, form) => {
+const submit: typeof grade = async (exercise, step, form) => {
   "use server";
   return await grade(exercise, step, form);
-}) satisfies Action;
+}
 
 const fn = createFeedbackFunction(modules);
 export const feedback: typeof fn = (...args) => {
@@ -61,7 +48,7 @@ export function Exercise(
 ) {
   return (
     <ExerciseComponent
-      action={submit}
+      action={action(submit)}
       {...props}
       feedback={(name, question, part, prev) =>
         feedback(name, question, part, prev)

@@ -39,16 +39,8 @@ export type View<T extends Schema<any, any, any, any>> = {
   [K in keyof T["steps"]]: Component<StepProps<T, K>>;
 };
 
-export type Submit = Action<
-  [
-    {
-      name: string;
-      question: object;
-      attempt: { step: string; state: object }[];
-    },
-    string,
-    FormData,
-  ],
+export type Submit<T extends Schema<any, any, any, any>> = Action<
+  [Props<T>, string, FormData],
   any
 >;
 
@@ -62,7 +54,7 @@ export type Feedback<T extends Schema<any, any, any, any>> = <
 
 type FinalComponent<T extends Schema<any, any, any, any>> = Component<
   Props<T> & {
-    action: Submit;
+    action: Submit<T>;
     feedback: Feedback<T>;
   }
 >;
@@ -146,6 +138,11 @@ export type RegisterSchema<R extends Register, K extends keyof R> = Awaited<
   ReturnType<R[K]>
 >["schema"];
 
+export type RegisterAction<R extends Register> = Action<
+  [GlobalProps<R>, string, FormData],
+  GlobalProps<R>
+>;
+
 export type RegisterFeedback<R extends Register> = <
   N extends keyof R,
   K extends keyof RegisterSchema<R, N>["steps"],
@@ -160,14 +157,16 @@ export type RegisterFeedback<R extends Register> = <
 
 export type GlobalProps<R extends Register> = {
   [K in keyof R]: Props<RegisterSchema<R, K>>;
-}[keyof R] & {
-  action: Submit;
-  feedback: RegisterFeedback<R>;
-};
+}[keyof R];
 
 export function createExerciseComponent<const R extends Register>(
   register: R,
-): Component<GlobalProps<R>> {
+): Component<
+  GlobalProps<R> & {
+    action: RegisterAction<R>;
+    feedback: RegisterFeedback<R>;
+  }
+> {
   const components = mapValues(register, (importPromise) => {
     return lazy(async () => {
       const module = await importPromise();
