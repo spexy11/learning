@@ -71,19 +71,14 @@ function createComponent<T extends Schema<any, any, any, any>>(
   view: View<T>,
 ): FinalComponent<T> {
   return function ExerciseComponent(fullProps) {
-    const [others, props] = splitProps(fullProps, ["action"]);
+    const [others, props] = splitProps(fullProps, ["action", "feedback"]);
 
-    const submitting = useSubmission(others.action);
+    const submission = useSubmission(others.action);
     const [attempt, setAttempt] = createStore(props.attempt);
     createEffect(() => setAttempt(props.attempt));
     createEffect(() => {
-      if (submitting.pending) {
-        const [_, step, form] = submitting.input;
-        const state = Object.fromEntries(form.entries());
-        setAttempt(
-          (current) =>
-            [...current, { step, state, next: null, score: [0, 0] }] as any,
-        );
+      if (submission.result) {
+        setAttempt(submission.result.attempt);
       }
     });
 
@@ -97,7 +92,7 @@ function createComponent<T extends Schema<any, any, any, any>>(
         <For each={attempt}>
           {(part, i) => {
             const feedback = createAsync(() =>
-              props.feedback(
+              others.feedback(
                 props.question,
                 part as Part<T, typeof part.step>,
                 attempt.splice(0, i()),

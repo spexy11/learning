@@ -1,5 +1,5 @@
 {
-  "name": "example-with-tailwindcss",
+  "name": "@learning/ngy",
   "type": "module",
   "scripts": {
     "dev": "vinxi dev",

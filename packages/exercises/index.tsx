@@ -5,7 +5,7 @@ import {
 } from "@learning/core";
 import z from "zod";
 import { schema as mathFactorSchema } from "./math/Factor";
-import type { Action as RouterAction } from "@solidjs/router";
+import { action, type Action as RouterAction } from "@solidjs/router";
 import type { ComponentProps } from "solid-js";
 
 const modules = {
@@ -43,14 +43,29 @@ export async function grade(
   return graded;
 }
 
+const submit = action(async (exercise, step, form) => {
+  "use server";
+  return await grade(exercise, step, form);
+}) satisfies Action;
+
 const fn = createFeedbackFunction(modules);
 export const feedback: typeof fn = (...args) => {
-  'use server'
-  return fn(...args)
-}
+  "use server";
+  return fn(...args);
+};
 
 const ExerciseComponent = createExerciseComponent(modules);
 
-export function Exercise(props: Omit<ComponentProps<typeof ExerciseComponent>, 'feedback'>) {
-  return <ExerciseComponent {...props} feedback={(name, question, part, prev) => feedback(name, question, part, prev)} />
+export function Exercise(
+  props: Omit<ComponentProps<typeof ExerciseComponent>, "feedback" | "action">,
+) {
+  return (
+    <ExerciseComponent
+      action={submit}
+      {...props}
+      feedback={(name, question, part, prev) =>
+        feedback(name, question, part, prev)
+      }
+    />
+  );
 }
