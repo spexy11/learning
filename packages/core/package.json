@@ -16,7 +16,7 @@
   "dependencies": {
     "@cortex-js/compute-engine": "^0.33.0",
     "es-toolkit": "^1.44.0",
-    "solid-js": "^1.9.11",
+    "solid-js": "catalog:",
     "zod": "catalog:"
   }
 }

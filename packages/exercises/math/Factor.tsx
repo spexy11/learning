@@ -1,5 +1,6 @@
 import { defineSchema, expr, type View } from "@learning/core";
 import z from "zod/v4";
+import { CheckMark } from '@learning/components'
 
 export const schema = defineSchema({
   name: "math/factor",
@@ -15,7 +16,7 @@ export const schema = defineSchema({
         expr(state.attempt).isEqual(question.expr),
         expr(state.attempt).isFactored(),
       ]);
-      yield [Number(isEqual && isFactored), 1] as const;
+      yield [Number(isEqual && isFactored), 1];
 
       const [expanded] = await Promise.all([
         expr(state.attempt).expand().latex(),
@@ -37,7 +38,7 @@ export default {
         Factorisez <strong>complètement</strong> {props.question.expr}.
       </p>
       <input name="attempt" value={props.state?.attempt} />
-      {props.feedback?.correct}
+      <CheckMark correct={props.feedback?.correct} />
       <pre>{JSON.stringify(props.feedback, null, 2)}</pre>
     </>
   ),
