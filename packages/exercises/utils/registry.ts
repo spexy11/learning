@@ -4,7 +4,7 @@ export const registry = {
   "math/factor": () => import("../math/factor"),
 };
 
-export const cache: Partial<{ [K in keyof typeof registry]: Module<K> }> = {};
+const cache: Partial<{ [K in keyof typeof registry]: Module<K> }> = {};
 
 export async function loadModule(name: keyof typeof registry) {
   if (!cache[name]) cache[name] = await registry[name]();
