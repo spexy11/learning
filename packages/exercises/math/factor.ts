@@ -12,15 +12,15 @@ export const schema = defineSchema({
 });
 
 export const feedback = defineFeedback(schema, {
-  start: async function* ({ question, attempt: [part] }) {
+  start: async function* ({ question, attempt: [{ state }] }) {
     const [isEqual, isFactored] = await Promise.all([
-      expr(part.state.attempt).isEqual(question.expr),
-      expr(part.state.attempt).isFactored(),
+      expr(state.attempt).isEqual(question.expr),
+      expr(state.attempt).isFactored(),
     ]);
     yield [Number(isEqual && isFactored), 1];
 
     const [expanded] = await Promise.all([
-      expr(part.state.attempt).expand().latex(),
+      expr(state.attempt).expand().latex(),
     ]);
     return {
       correct: isFactored && isEqual,
