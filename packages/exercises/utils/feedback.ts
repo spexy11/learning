@@ -1,14 +1,5 @@
-import z from "zod/v4";
 import { query } from "@solidjs/router";
-
-const registry = {
-  "math/factor": () => import("../math/factor"),
-};
-
-type Module<N extends keyof typeof registry> = Awaited<
-  ReturnType<(typeof registry)[N]>
->;
-type Exercise<N extends keyof typeof registry> = z.input<Module<N>["schema"]>;
+import registry, { type Exercise, type Module } from "./registry";
 
 let cache: Partial<{ [K in keyof typeof registry]: Module<K> }> = {};
 
