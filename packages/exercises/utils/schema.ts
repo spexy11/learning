@@ -1,6 +1,6 @@
-import { type Schema } from "@/utils/types";
+import { type Schema } from "./types";
 import z from "zod/v4";
-import registry from "@/utils/registry";
+import registry from "./registry";
 import { memoize } from "es-toolkit";
 
 export function buildSchema<const T extends Schema>(schema: T) {

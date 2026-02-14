@@ -1,7 +1,7 @@
-import registry from "@/utils/registry";
-import { buildSchema, getSchema } from "@/utils/schema";
+import registry from "./registry";
+import { buildSchema, getSchema } from "./schema";
 import type { z } from "zod/v4";
-import type { Exercise, Feedback, FeedbackReturn, Schema } from "@/utils/types";
+import type { Exercise, Feedback, FeedbackReturn, Schema } from "./types";
 import { memoize } from "es-toolkit";
 import { query } from "@solidjs/router";
 
@@ -41,13 +41,16 @@ async function extractFeedback<
   const generator = feedback[step](exercise as any);
   let score: [number, number] = [0, 0];
   let next: keyof T["steps"] | null = null;
-  for await (const chunk of generator) {
-    if (Array.isArray(chunk))
-      score = [score[0] + chunk[0], score[1] + chunk[1]];
-    else next = chunk;
+  while (true) {
+    const { value, done } = await generator.next();
+    if (done) {
+      if (info === "feedback") return value;
+      return { score, next };
+    }
+    if (Array.isArray(value))
+      score = [score[0] + value[0], score[1] + value[1]];
+    else next = value;
   }
-  if (info === "grade") return { next, score };
-  return (await generator.next()).value;
 }
 
 const getModule = memoize(
@@ -75,6 +78,7 @@ export const getFeedback = query(
   >(
     name: N,
     rawExercise: z.infer<Awaited<ReturnType<typeof getSchema<N>>>> & {
+      name: N;
       attempt: [{ step: K }];
     },
   ): Promise<
@@ -90,3 +94,9 @@ export const getFeedback = query(
   },
   "getFeedback",
 );
+
+const test = await getFeedback("math/factor", {
+  name: "math/factor",
+  question: { expr: "x^2" },
+  attempt: [{ step: "start", state: { attempt: "x^3" } }],
+});

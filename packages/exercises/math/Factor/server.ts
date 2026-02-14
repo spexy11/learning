@@ -1,6 +1,6 @@
 import { expr } from "@learning/core";
 import z from "zod/v4";
-import type { Feedback, Schema } from "@/utils/types";
+import type { Feedback, Schema } from "../../utils/types";
 
 export const schema = {
   name: "math/factor",
@@ -20,12 +20,8 @@ export const feedback = {
     ]);
     yield [Number(isEqual && isFactored), 1];
 
-    const [expanded] = await Promise.all([
-      expr(state.attempt).expand().latex(),
-    ]);
     return {
       correct: isFactored && isEqual,
-      expanded,
       isEqual,
       isFactored,
     };

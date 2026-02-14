@@ -1,5 +1,5 @@
 import z from "zod/v4";
-import type { Feedback, Schema } from "@/utils/types";
+import type { Feedback, Schema } from "../../utils/types";
 import { expr } from "@learning/core";
 
 export const schema = {
