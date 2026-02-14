@@ -26,7 +26,7 @@ export type Feedback<T extends Schema> = {
   ) => AsyncGenerator<[number, number] | keyof T["steps"], any>;
 };
 
-type FeedbackReturn<T extends () => AsyncGenerator> =
+export type FeedbackReturn<T extends (...args: any[]) => AsyncGenerator> =
   ReturnType<T> extends AsyncGenerator<any, infer R> ? R : never;
 
 export type View<

@@ -1,10 +1,6 @@
-export const registry = {
-  "math/factor": {
-    server: () => import("@/math/Factor/server"),
-    View: () => import("@/math/Factor/View"),
+export default {
+  server: {
+    "math/factor": () => import("@/math/Factor/server"),
+    "math/simple": () => import("@/math/Simple/server"),
   },
-  "math/simple": {
-    server: () => import("@/math/Simple/server"),
-    View: () => import("@/math/Simple/View"),
-  },
-} as const;
+};
