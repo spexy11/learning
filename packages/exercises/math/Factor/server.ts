@@ -1,7 +1,8 @@
-import { defineFeedback, defineSchema, expr } from "@learning/core";
+import { expr } from "@learning/core";
 import z from "zod/v4";
+import type { Feedback, Schema } from "@/utils/schema";
 
-export const schema = defineSchema({
+export const schema = {
   name: "math/factor",
   question: {
     expr: z.string(),
@@ -9,9 +10,9 @@ export const schema = defineSchema({
   steps: {
     start: { attempt: z.string() },
   },
-});
+} as const satisfies Schema;
 
-export const feedback = defineFeedback(schema, {
+export const feedback = {
   start: async function* ({ question, attempt: [{ state }] }) {
     const [isEqual, isFactored] = await Promise.all([
       expr(state.attempt).isEqual(question.expr),
@@ -29,4 +30,4 @@ export const feedback = defineFeedback(schema, {
       isFactored,
     };
   },
-});
+} satisfies Feedback<typeof schema>;

@@ -1,13 +1,14 @@
-import { Exercise } from "@learning/exercises";
+const t = {
+  hello: () => {
+    "use server";
+    console.log("hello");
+  },
+};
 
 export default function Home() {
   return (
     <main>
-      <Exercise
-        name="math/factor"
-        question={{ expr: "x^2 - 5x + 6" }}
-        attempt={[]}
-      />
+      Hello<button onClick={() => t.hello()}>Test</button>
     </main>
   );
 }

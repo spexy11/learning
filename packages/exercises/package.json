@@ -10,6 +10,7 @@
     "@learning/components": "workspace:",
     "@learning/core": "workspace:",
     "@solidjs/router": "^0.15.4",
+    "es-toolkit": "^1.44.0",
     "solid-js": "catalog:",
     "zod": "catalog:"
   },
