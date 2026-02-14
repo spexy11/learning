@@ -1,6 +1,6 @@
 import { expr } from "@learning/core";
 import z from "zod/v4";
-import type { Feedback, Schema } from "@/utils/schema";
+import type { Feedback, Schema } from "@/utils/types";
 
 export const schema = {
   name: "math/factor",

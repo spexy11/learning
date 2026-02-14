@@ -1,5 +1,5 @@
 import { CheckMark } from "@learning/components";
-import type { View } from "@/utils/schema";
+import type { View } from "@/utils/types";
 
 export default {
   start: (props) => (
