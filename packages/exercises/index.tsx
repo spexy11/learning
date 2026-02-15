@@ -1,1 +1,1 @@
-export { getFeedback } from "./utils/queries";
+export { getFeedback, gradeExercise } from "./utils/queries";

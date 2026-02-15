@@ -1,14 +1,19 @@
-import { getFeedback } from "@learning/exercises";
+import { getFeedback, gradeExercise } from "@learning/exercises";
 
 const t = {
   hello: async () => {
     "use server";
-    const test = await getFeedback({
+    const graded = await gradeExercise({
+      name: "math/factor",
+      question: { expr: "x^2" },
+      attempt: [{ step: "start", state: { attempt: "x^2" } }],
+    });
+    console.log(JSON.stringify(graded, null, 2));
+    return await getFeedback({
       name: "math/factor",
       question: { expr: "x^2" },
       attempt: [{ step: "start", state: { attempt: "x^3" } }],
     });
-    console.log(JSON.stringify(test, null, 2));
   },
 };
 

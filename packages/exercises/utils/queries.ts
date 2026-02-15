@@ -93,3 +93,37 @@ export const getFeedback = query(
   getFeedbackFunction,
   "getFeedback",
 ) as typeof getFeedbackFunction;
+
+const gradePart = async <
+  const N extends ModuleNames,
+  const E extends Exercise<Module<N>["schema"]>,
+>(
+  exercise: E & { name: N },
+): Promise<{
+  score: [number, number];
+  next: keyof Module<N>["schema"]["steps"] | null;
+}> => {
+  const { schema, feedback } = await getModule(exercise.name);
+  return extractFeedback(
+    schema,
+    feedback as Feedback<typeof schema>,
+    "grade",
+    exercise as Exercise<typeof schema, string>,
+  );
+};
+async function gradeExerciseFunction<
+  N extends ModuleNames,
+  const E extends Exercise<Module<N>["schema"]>,
+>(exercise: E & { name: N }) {
+  "use server";
+  return await Promise.all(
+    exercise.attempt.map(async (_part, i) => {
+      return gradePart({ ...exercise, attempt: exercise.attempt.slice(i) });
+    }),
+  );
+}
+
+export const gradeExercise = query(
+  gradeExerciseFunction,
+  "gradeExercise",
+) as typeof gradeExerciseFunction;
