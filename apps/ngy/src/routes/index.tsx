@@ -1,7 +1,14 @@
+import { getFeedback } from "@learning/exercises";
+
 const t = {
-  hello: () => {
+  hello: async () => {
     "use server";
-    console.log("hello");
+    const test = await getFeedback({
+      name: "math/factor",
+      question: { expr: "x^2" },
+      attempt: [{ step: "start", state: { attempt: "x^3" } }],
+    });
+    console.log(JSON.stringify(test, null, 2));
   },
 };
 

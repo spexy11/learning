@@ -7,14 +7,20 @@ export type Schema = {
   steps: Record<string, z.ZodRawShape> & { start: any };
 };
 
-type Part<T extends Schema, K extends keyof T["steps"] = keyof T["steps"]> = {
+export type Part<
+  T extends Schema,
+  K extends keyof T["steps"] = keyof T["steps"],
+> = {
   [S in keyof T["steps"]]: {
     step: S;
     state: z.output<z.ZodObject<T["steps"][S]>>;
   };
 }[K];
 
-export type Exercise<T extends Schema, K extends keyof T["steps"]> = {
+export type Exercise<
+  T extends Schema,
+  K extends keyof T["steps"] = keyof T["steps"],
+> = {
   name: T["name"];
   question: z.output<z.ZodObject<T["question"]>>;
   attempt: [Part<T, K>, ...Part<T>[]];
