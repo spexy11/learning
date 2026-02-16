@@ -1,4 +1,4 @@
-import { getFeedback, gradeExercise } from "@learning/exercises";
+import { Exercise, getFeedback, gradeExercise } from "@learning/exercises";
 
 const t = {
   hello: async () => {
@@ -20,7 +20,7 @@ const t = {
 export default function Home() {
   return (
     <main>
-      Hello<button onClick={() => t.hello()}>Test</button>
+      <Exercise name="math/factor" question={{ expr: "x^2 - 5x + 6" }} />
     </main>
   );
 }

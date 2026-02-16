@@ -52,7 +52,7 @@ async function extractFeedback<
   }
 }
 
-type Module<N extends keyof (typeof registry)["server"]> =
+export type Module<N extends keyof (typeof registry)["server"]> =
   Awaited<ReturnType<(typeof registry)["server"][N]>> extends {
     schema: infer T extends Schema;
     feedback: infer F extends Record<string, any> & { start: any };
