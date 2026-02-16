@@ -55,6 +55,17 @@ def is_factored(input: OneExpression) -> bool:
     return True
 
 
+@router.post("/match")
+def match(input: TwoExpressions) -> bool:
+    expr, pattern = sympy.expand(input.expr1.expr), input.expr2.expr
+    subs = {
+        s: sympy.Wild(s.name, properties=[lambda e: e.is_polynomial()])
+        for s in pattern.free_symbols
+    }
+    pattern = sympy.expand(pattern.subs(subs))
+    return expr.match(pattern) is not None
+
+
 @router.post("/latex")
 def latex(input: OneExpression) -> str:
     return sympy.latex(input.expr.expr)

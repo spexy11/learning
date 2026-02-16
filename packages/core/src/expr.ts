@@ -31,5 +31,7 @@ export function expr(input: string | MathJson) {
       symapi.expr.equal({ expr1: json, expr2: getMathJson(expr) }),
     isFactored: () => symapi.expr.isFactored({ expr: json }),
     latex: () => symapi.expr.latex({ expr: json }),
+    match: (expr: string | MathJson) =>
+      symapi.expr.match({ expr1: json, expr2: getMathJson(expr) }),
   };
 }
