@@ -32,25 +32,24 @@ export const feedback = {
     const correct = resolve({ isEqual, isFactored }).then(
       (d) => d.isEqual && d.isFactored,
     );
+
     const grade = correct.then((c) => [Number(c), 1] as [number, number]);
-
-    const squaredSum = expr(question.expr).matches("(a + b)^2");
-    const conj = expr(question.expr).matches("(a + b)(a - b)");
-    const next = resolve({ correct, squaredSum, conj }).then((d) => {
-      if (!d.correct && (d.squaredSum || d.conj)) return "binomial";
-      else if (!d.correct) return "root";
-      return null;
+    const next = resolve({
+      correct,
+      squaredSum: expr(question.expr).matches("(a + b)^2"),
+      conj: expr(question.expr).matches("(a + b)(a - b)"),
+    }).then((d) => {
+      if (d.correct) return null;
+      else if (d.squaredSum || d.conj) return "binomial";
+      else return "root";
     });
-
     yield await Promise.all([grade, next]);
+
     return await resolve({
-      commonRoots: expr(state.attempt).commonRoots(question.expr),
       expanded: expr(state.attempt).expand().latex(),
       correct,
       isEqual,
       isFactored,
-      squaredSum,
-      conj,
     });
   },
   binomial: async function* ({ question, attempt: [{ state }] }) {

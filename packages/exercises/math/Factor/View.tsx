@@ -56,7 +56,9 @@ export default {
   ),
   root: (props) => (
     <>
-      <p>Trouvez une racine</p>
+      <p>
+        Trouvez une racine de <MathField value={props.question.expr} readOnly />
+      </p>
     </>
   ),
 } satisfies View<typeof import("./server")>;
