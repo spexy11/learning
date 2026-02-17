@@ -108,6 +108,7 @@ export default function Exercise<N extends ModuleNames>(
           return (
             <fieldset disabled>
               <h3>Étape {i() + 1}</h3>
+              <h4>{grades()?.[i()]?.score.join("/")}</h4>
               <Suspense fallback={<p>Correction en cours...</p>}>
                 <Dynamic
                   component={component()}
@@ -121,6 +122,7 @@ export default function Exercise<N extends ModuleNames>(
         }}
       </For>
       <Show when={next()}>
+        <h3>Étape {attempt.length + 1}</h3>
         {/* @ts-ignore */}
         <form method="post" action={submitExercise.with(exercise(), next())}>
           <Dynamic component={component()} {...props} step={next()} />
