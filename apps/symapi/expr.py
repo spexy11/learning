@@ -32,6 +32,12 @@ def flatten(expr: sympy.Expr, op=sympy.Mul) -> sympy.Expr:
     return op(*terms, evaluate=False)
 
 
+@router.post("/commonRoots")
+def common_roots(input: TwoExpressions) -> list[str]:
+    expr = sympy.solveset(input.expr1.expr).intersect(sympy.solveset(input.expr2.expr))
+    return [sympy.latex(e) for e in expr]
+
+
 @router.post("/equal")
 def equal(input: TwoExpressions) -> bool:
     expr = input.expr1.expr - input.expr2.expr
@@ -69,3 +75,9 @@ def match(input: TwoExpressions) -> bool:
 @router.post("/latex")
 def latex(input: OneExpression) -> str:
     return sympy.latex(input.expr.expr)
+
+
+@router.post("/roots")
+def roots(input: OneExpression) -> list[str]:
+    expr = sympy.solveset(input.expr.expr)
+    return [sympy.latex(e) for e in expr]

@@ -70,17 +70,17 @@ test.each([
 test.each([
   {
     desc: "x^2 - 4 = (a + b) (a - b)",
-    promise: expr("x^2 - 4").match("(a + b) (a - b)"),
+    promise: expr("x^2 - 4").matches("(a + b) (a - b)"),
     result: true,
   },
   {
     desc: "x^2 - 4 = (a + b)^2",
-    promise: expr("x^2 - 4").match("(a + b)^2"),
+    promise: expr("x^2 - 4").matches("(a + b)^2"),
     result: false,
   },
   {
     desc: "x^2 + 2x + 1 = (a + b)^2",
-    promise: expr("x^2 + 2x + 1").match("(a + b)^2"),
+    promise: expr("x^2 + 2x + 1").matches("(a + b)^2"),
     result: true,
   },
 ])("pattern matching works correctly: $desc", async ({ promise, result }) => {

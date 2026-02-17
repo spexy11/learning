@@ -13,25 +13,28 @@ const integrateParams = z.union([
     .transform(([x, a, b]) => [["Tuple", x, a, b]] as const),
 ]);
 
-function getMathJson(input: string | MathJson) {
+function getMathJson(input: MathJson) {
   return typeof input === "string" ? ce.parse(input).json : input;
 }
 
-export function expr(input: string | MathJson) {
+export function expr(input: MathJson) {
   const json = getMathJson(input);
   return {
     json,
     abs: () => expr(["Abs", json]),
+    commonRoots: (expr: MathJson) =>
+      symapi.expr.commonRoots({ expr1: json, expr2: getMathJson(expr) }),
     diff: (x = "x") => expr(["Derivative", json, x]),
     expand: () => expr(["Expand", json]),
     factor: () => expr(["Factor", json]),
     integrate: (...params: z.input<typeof integrateParams>) =>
       expr(["Integrate", json, ...integrateParams.parse(params)]),
-    isEqual: (expr: string | MathJson) =>
+    isEqual: (expr: MathJson) =>
       symapi.expr.equal({ expr1: json, expr2: getMathJson(expr) }),
     isFactored: () => symapi.expr.isFactored({ expr: json }),
     latex: () => symapi.expr.latex({ expr: json }),
-    match: (expr: string | MathJson) =>
+    matches: (expr: MathJson) =>
       symapi.expr.match({ expr1: json, expr2: getMathJson(expr) }),
+    roots: () => symapi.expr.roots({ expr: json }),
   };
 }
