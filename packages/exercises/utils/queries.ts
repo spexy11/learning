@@ -46,9 +46,17 @@ async function extractFeedback<
       if (info === "feedback") return value;
       return { score, next };
     }
-    if (Array.isArray(value))
-      score = [score[0] + value[0], score[1] + value[1]];
-    else next = value;
+    if (Array.isArray(value)) {
+      if (
+        Array.isArray(value[0]) &&
+        (typeof value[1] === "string" || value[1] === null)
+      ) {
+        score = [score[0] + value[0][0], score[1] + value[0][1]];
+        next = value[1];
+      } else if (typeof value[0] === "number" && typeof value[1] === "number") {
+        score = [score[0] + value[0], score[1] + value[1]];
+      }
+    } else next = value;
   }
 }
 

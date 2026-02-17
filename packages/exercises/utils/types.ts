@@ -29,7 +29,13 @@ export type Exercise<
 export type Feedback<T extends Schema> = {
   [K in keyof T["steps"]]: (
     exercise: Exercise<T, K>,
-  ) => AsyncGenerator<[number, number] | keyof T["steps"], any>;
+  ) => AsyncGenerator<
+    | [number, number]
+    | keyof T["steps"]
+    | null
+    | [[number, number], keyof T["steps"] | null],
+    any
+  >;
 };
 
 export type FeedbackReturn<T extends (...args: any[]) => AsyncGenerator> =
