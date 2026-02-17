@@ -1,26 +1,9 @@
-import { Exercise, getFeedback, gradeExercise } from "@learning/exercises";
-
-const t = {
-  hello: async () => {
-    "use server";
-    const graded = await gradeExercise({
-      name: "math/factor",
-      question: { expr: "x^2" },
-      attempt: [{ step: "start", state: { attempt: "x^2" } }],
-    });
-    console.log(JSON.stringify(graded, null, 2));
-    return await getFeedback({
-      name: "math/factor",
-      question: { expr: "x^2" },
-      attempt: [{ step: "start", state: { attempt: "x^3" } }],
-    });
-  },
-};
+import { Exercise } from "@learning/exercises";
 
 export default function Home() {
   return (
     <main>
-      <Exercise name="math/factor" question={{ expr: "x^2 - 5x + 6" }} />
+      <Exercise name="math/factor" question={{ expr: "x^2 - 2x + 1" }} />
     </main>
   );
 }

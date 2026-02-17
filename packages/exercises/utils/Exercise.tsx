@@ -6,6 +6,7 @@ import {
   createEffect,
   createMemo,
   For,
+  type JSX,
   lazy,
   Show,
   Suspense,
@@ -14,6 +15,7 @@ import {
 import { createStore } from "solid-js/store";
 import { action, createAsync, useSubmission } from "@solidjs/router";
 import { getSchema } from "./schema";
+import { Button } from "@learning/components";
 
 type ModuleNames = keyof (typeof registry)["views"];
 
@@ -106,9 +108,7 @@ export default function Exercise<N extends ModuleNames>(
             });
           });
           return (
-            <fieldset disabled>
-              <h3>Étape {i() + 1}</h3>
-              <h4>{grades()?.[i()]?.score.join("/")}</h4>
+            <Step index={i() + 1} grade={grades()?.[i()]?.score} disabled>
               <Suspense fallback={<p>Correction en cours...</p>}>
                 <Dynamic
                   component={component()}
@@ -117,20 +117,45 @@ export default function Exercise<N extends ModuleNames>(
                   feedback={feedback()}
                 />
               </Suspense>
-            </fieldset>
+            </Step>
           );
         }}
       </For>
       <Show when={next()}>
-        <h3>Étape {attempt.length + 1}</h3>
-        {/* @ts-ignore */}
-        <form method="post" action={submitExercise.with(exercise(), next())}>
-          <Dynamic component={component()} {...props} step={next()} />
-          <Show when={!submission.pending} fallback={<p>Soumission...</p>}>
-            <button>Corriger</button>
-          </Show>
-        </form>
+        <Step index={attempt.length + 1}>
+          {/* @ts-ignore */}
+          <form method="post" action={submitExercise.with(exercise(), next())}>
+            <Dynamic component={component()} {...props} step={next()} />
+            <Show when={!submission.pending} fallback={<p>Soumission...</p>}>
+              <Button color="green">Corriger</Button>
+            </Show>
+          </form>
+        </Step>
       </Show>
     </Suspense>
+  );
+}
+
+function Step(props: {
+  children: JSX.Element;
+  disabled?: boolean;
+  grade?: [number, number];
+  index: number;
+}) {
+  return (
+    <fieldset
+      class="container rounded-xl my-4 mx-auto p-4 shadow-sm"
+      classList={{
+        "bg-blue-50 hover:bg-blue-100": !props.disabled,
+        "bg-white hover:bg-slate-50": props.disabled === true,
+      }}
+      disabled={props.disabled === true}
+    >
+      <div class="flex justify-between">
+        <h3 class="text-sky-900 text-xl font-bold mb-3">Étape {props.index}</h3>
+        <h4>{props.grade?.join("/")}</h4>
+      </div>
+      <div>{props.children}</div>
+    </fieldset>
   );
 }
