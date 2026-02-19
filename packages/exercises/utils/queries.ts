@@ -1,8 +1,15 @@
 import { query } from "@solidjs/router";
 import registry from "./registry";
 import { buildSchema } from "./schema";
-import type { Exercise, Feedback, FeedbackReturn, Schema } from "./types";
-import { memoize } from "es-toolkit";
+import type {
+  Exercise,
+  ExerciseTemplate,
+  Feedback,
+  FeedbackReturn,
+  Part,
+  Schema,
+} from "./types";
+import { mapAsync, memoize } from "es-toolkit";
 
 async function extractFeedback<
   T extends Schema,
@@ -102,6 +109,29 @@ export const getFeedback = query(
   "getFeedback",
 ) as typeof getFeedbackFunction;
 
+const getFullFeedbackFunction = async <
+  N extends ModuleNames,
+  const E extends ExerciseTemplate<Module<N>["schema"]>,
+>(
+  exercise: E & { name: N },
+) => {
+  "use server";
+  return mapAsync(exercise.attempt ?? [], (_, i) =>
+    getFeedback({
+      ...exercise,
+      attempt: exercise.attempt?.slice(i) as [
+        Part<Module<N>["schema"]>,
+        ...Part<Module<N>["schema"]>[],
+      ],
+    }),
+  );
+};
+
+export const getFullFeedback = query(
+  getFullFeedbackFunction,
+  "getFullFeedback",
+) as typeof getFullFeedbackFunction;
+
 const gradePart = async <
   const N extends ModuleNames,
   const E extends Exercise<Module<N>["schema"]>,
@@ -121,14 +151,18 @@ const gradePart = async <
 };
 async function gradeExerciseFunction<
   N extends ModuleNames,
-  const E extends Exercise<Module<N>["schema"]>,
+  const E extends ExerciseTemplate<Module<N>["schema"]>,
 >(exercise: E & { name: N }) {
   "use server";
-  return await Promise.all(
-    exercise.attempt.map(async (_part, i) => {
-      return gradePart({ ...exercise, attempt: exercise.attempt.slice(i) });
-    }),
-  );
+  return mapAsync(exercise.attempt ?? [], async (_part, i) => {
+    return gradePart({
+      ...exercise,
+      attempt: exercise.attempt?.slice(i) as [
+        Part<Module<N>["schema"]>,
+        ...Part<Module<N>["schema"]>[],
+      ],
+    });
+  });
 }
 
 export const gradeExercise = query(

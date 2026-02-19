@@ -26,6 +26,12 @@ export type Exercise<
   attempt: [Part<T, K>, ...Part<T>[]];
 };
 
+export type ExerciseTemplate<T extends Schema> = {
+  name: T["name"];
+  question: z.output<z.ZodObject<T["question"]>>;
+  attempt?: Part<T>[];
+};
+
 export type Feedback<T extends Schema> = {
   [K in keyof T["steps"]]: (
     exercise: Exercise<T, K>,

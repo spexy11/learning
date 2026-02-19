@@ -1,7 +1,7 @@
 import { Dynamic } from "solid-js/web";
-import { getFeedback, gradeExercise, type Module } from "./queries";
+import { getFullFeedback, gradeExercise, type Module } from "./queries";
 import registry from "./registry";
-import type { Exercise, Part, View } from "./types";
+import type { Exercise, ExerciseTemplate, Part, View } from "./types";
 import {
   createEffect,
   createMemo,
@@ -13,7 +13,7 @@ import {
   type Component,
 } from "solid-js";
 import { createStore } from "solid-js/store";
-import { action, createAsync, useSubmission } from "@solidjs/router";
+import { action, createAsyncStore, useSubmission } from "@solidjs/router";
 import { getSchema } from "./schema";
 import { Button } from "@learning/components";
 
@@ -57,45 +57,57 @@ const submitExercise = action(
       { step, state: Object.fromEntries(form.entries()) },
       ...exercise.attempt,
     ];
-    const parsed = schema.parse({ ...exercise, attempt }) as Exercise<
-      Module<N>["schema"]
-    > & { name: N };
+    const parsed = schema.parse({ ...exercise, attempt }) as typeof exercise;
     return parsed;
   },
 );
 
-type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
-type Attempt<N extends ModuleNames> = [
-  Part<Module<N>["schema"]>,
-  ...Part<Module<N>["schema"]>[],
-];
-
 export default function Exercise<N extends ModuleNames>(
-  props: Optional<Exercise<Module<N>["schema"]>, "attempt"> & { name: N },
+  props: ExerciseTemplate<Module<N>["schema"]> & { name: N },
 ) {
-  const [attempt, setAttempt] = createStore<Attempt<N> | []>(
-    props.attempt || [],
+  const [attempt, setAttempt] = createStore<Part<Module<N>["schema"]>[]>(
+    props.attempt ?? [],
   );
-  const exercise = () => ({ ...props, attempt: attempt as Attempt<N> });
+  const exercise = () => ({ ...props, attempt }) as typeof props;
   createEffect(() => setAttempt(props.attempt || []));
   const submission = useSubmission(submitExercise);
   createEffect(() => {
-    if (submission.result) {
-      setAttempt(submission.result.attempt as unknown as Attempt<N>);
+    const result = submission.result as
+      | Exercise<Module<N>["schema"]>
+      | undefined;
+    if (result) {
+      setAttempt(result.attempt);
     }
   });
 
   const component = () => loadComponent(props.name);
-  const grades = createAsync(
+  const grades = createAsyncStore(
     async () => (attempt.length ? gradeExercise(exercise()) : []),
     { initialValue: [] },
   );
+  const feedback = createAsyncStore(() => getFullFeedback(exercise()), {
+    initialValue: [],
+  });
   const next = createMemo(() => {
     if (grades().length === 0) return "start" as const;
     return grades()[0]!.next;
   });
   return (
-    <div class="flex flex-col-reverse">
+    <div>
+      <For each={attempt}>
+        {(part, i) => (
+          <Step index={i() + 1} grade={grades()[i()]?.score} disabled>
+            <Suspense fallback={<p>Correction en cours...</p>}>
+              <Dynamic
+                component={component()}
+                {...props}
+                {...part}
+                feedback={feedback()[i()]}
+              />
+            </Suspense>
+          </Step>
+        )}
+      </For>
       <Show when={next()}>
         <Step index={attempt.length + 1}>
           {/* @ts-ignore */}
@@ -107,31 +119,6 @@ export default function Exercise<N extends ModuleNames>(
           </form>
         </Step>
       </Show>
-      <For each={attempt}>
-        {(part, i) => {
-          const feedback = createAsync(async () => {
-            return getFeedback({
-              ...props,
-              attempt: attempt.slice(i()) as [
-                Part<Module<N>["schema"]>,
-                ...Part<Module<N>["schema"]>[],
-              ],
-            });
-          });
-          return (
-            <Step index={i() + 1} grade={grades()?.[i()]?.score} disabled>
-              <Suspense fallback={<p>Correction en cours...</p>}>
-                <Dynamic
-                  component={component()}
-                  {...props}
-                  {...part}
-                  feedback={feedback()}
-                />
-              </Suspense>
-            </Step>
-          );
-        }}
-      </For>
     </div>
   );
 }
