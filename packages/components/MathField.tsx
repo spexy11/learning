@@ -32,7 +32,9 @@ export default function MathField(props: MathProps) {
     <>
       <math-field
         class="bg-transparent text-xl"
-        onInput={(e: any) => setValue(e.target.value)}
+        onInput={(e: InputEvent & { target: MathfieldElement }) =>
+          setValue(e.target.value)
+        }
         {...attrs}
       />
       <Show when={props.name}>
