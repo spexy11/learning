@@ -13,7 +13,13 @@ import {
   type Component,
 } from "solid-js";
 import { createStore } from "solid-js/store";
-import { action, createAsyncStore, useSubmission } from "@solidjs/router";
+import {
+  action,
+  createAsync,
+  createAsyncStore,
+  json,
+  useSubmission,
+} from "@solidjs/router";
 import { getSchema } from "./schema";
 import { Button } from "@learning/components";
 
@@ -72,7 +78,7 @@ export default function Exercise<N extends ModuleNames>(
       | Exercise<Module<N>["schema"]>
       | undefined;
     if (result) {
-      setAttempt(result.attempt);
+      setAttempt((current) => [result.attempt[0], ...current]);
     }
   });
 
@@ -85,27 +91,7 @@ export default function Exercise<N extends ModuleNames>(
     return grades()?.[0]!.next ?? null;
   });
   return (
-    <>
-      <div class="flex flex-col-reverse">
-        <For each={attempt}>
-          {(part, i) => (
-            <Suspense fallback={<p>Correction en cours...</p>}>
-              <Step
-                index={attempt.length - i()}
-                grade={grades()?.[i()]?.score}
-                disabled
-              >
-                <Dynamic
-                  component={component()}
-                  {...props}
-                  {...part}
-                  feedback={feedback()?.[i()]}
-                />
-              </Step>
-            </Suspense>
-          )}
-        </For>
-      </div>
+    <div class="flex flex-col-reverse">
       <Show when={next()}>
         <Step index={attempt.length + 1}>
           <form method="post" action={submitAction.with(exercise(), next()!)}>
@@ -116,7 +102,25 @@ export default function Exercise<N extends ModuleNames>(
           </form>
         </Step>
       </Show>
-    </>
+      <Suspense fallback={<p>Correction en cours...</p>}>
+        <For each={attempt}>
+          {(part, i) => (
+            <Step
+              index={attempt.length - i()}
+              grade={grades()?.[i()]?.score}
+              disabled
+            >
+              <Dynamic
+                component={component()}
+                {...props}
+                {...part}
+                feedback={feedback()?.[i()]}
+              />
+            </Step>
+          )}
+        </For>
+      </Suspense>
+    </div>
   );
 }
 
