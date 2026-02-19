@@ -45,32 +45,28 @@ function loadComponent<N extends ModuleNames>(name: N) {
   });
 }
 
-const submitExercise = action(
-  async <N extends ModuleNames>(
-    exercise: Exercise<Module<N>["schema"]> & { name: N },
-    step: keyof Module<N>["schema"]["steps"],
-    form: FormData,
-  ): Promise<Exercise<Module<N>["schema"]>> => {
-    "use server";
-    const schema = await getSchema(exercise.name);
-    const attempt = [
-      { step, state: Object.fromEntries(form.entries()) },
-      ...exercise.attempt,
-    ];
-    const parsed = schema.parse({ ...exercise, attempt }) as typeof exercise;
-    return parsed;
-  },
-);
+const submitExerciseFn = async <N extends ModuleNames>(
+  exercise: ExerciseTemplate<Module<N>["schema"]> & { name: N },
+  step: keyof Module<N>["schema"]["steps"],
+  form: FormData,
+): Promise<ExerciseTemplate<Module<N>["schema"]>> => {
+  "use server";
+  const schema = await getSchema(exercise.name);
+  const attempt = [
+    { step, state: Object.fromEntries(form.entries()) },
+    ...(exercise.attempt ?? []),
+  ];
+  const parsed = schema.parse({ ...exercise, attempt }) as typeof exercise;
+  return parsed;
+};
 
 export default function Exercise<N extends ModuleNames>(
   props: ExerciseTemplate<Module<N>["schema"]> & { name: N },
 ) {
-  const [attempt, setAttempt] = createStore<Part<Module<N>["schema"]>[]>(
-    props.attempt ?? [],
-  );
-  const exercise = () => ({ ...props, attempt }) as typeof props;
+  const [attempt, setAttempt] = createStore<Part<Module<N>["schema"]>[]>([]);
   createEffect(() => setAttempt(props.attempt || []));
-  const submission = useSubmission(submitExercise);
+  const submitAction = action(submitExerciseFn<N>);
+  const submission = useSubmission(submitAction);
   createEffect(() => {
     const result = submission.result as
       | Exercise<Module<N>["schema"]>
@@ -81,37 +77,38 @@ export default function Exercise<N extends ModuleNames>(
   });
 
   const component = () => loadComponent(props.name);
-  const grades = createAsyncStore(
-    async () => (attempt.length ? gradeExercise(exercise()) : []),
-    { initialValue: [] },
-  );
-  const feedback = createAsyncStore(() => getFullFeedback(exercise()), {
-    initialValue: [],
-  });
+  const exercise = () => ({ ...props, attempt }) as typeof props;
+  const grades = createAsyncStore(() => gradeExercise(exercise()));
+  const feedback = createAsyncStore(() => getFullFeedback(exercise()));
   const next = createMemo(() => {
-    if (grades().length === 0) return "start" as const;
-    return grades()[0]!.next;
+    if (grades()?.length === 0) return "start" as const;
+    return grades()?.[0]!.next ?? null;
   });
   return (
-    <div>
-      <For each={attempt}>
-        {(part, i) => (
-          <Step index={i() + 1} grade={grades()[i()]?.score} disabled>
+    <>
+      <div class="flex flex-col-reverse">
+        <For each={attempt}>
+          {(part, i) => (
             <Suspense fallback={<p>Correction en cours...</p>}>
-              <Dynamic
-                component={component()}
-                {...props}
-                {...part}
-                feedback={feedback()[i()]}
-              />
+              <Step
+                index={attempt.length - i()}
+                grade={grades()?.[i()]?.score}
+                disabled
+              >
+                <Dynamic
+                  component={component()}
+                  {...props}
+                  {...part}
+                  feedback={feedback()?.[i()]}
+                />
+              </Step>
             </Suspense>
-          </Step>
-        )}
-      </For>
+          )}
+        </For>
+      </div>
       <Show when={next()}>
         <Step index={attempt.length + 1}>
-          {/* @ts-ignore */}
-          <form method="post" action={submitExercise.with(exercise(), next())}>
+          <form method="post" action={submitAction.with(exercise(), next()!)}>
             <Dynamic component={component()} {...props} step={next()} />
             <Show when={!submission.pending} fallback={<p>Soumission...</p>}>
               <Button color="green">Corriger</Button>
@@ -119,7 +116,7 @@ export default function Exercise<N extends ModuleNames>(
           </form>
         </Step>
       </Show>
-    </div>
+    </>
   );
 }
 
@@ -140,7 +137,7 @@ function Step(props: {
     >
       <div class="flex justify-between">
         <h3 class="text-sky-900 text-xl font-bold mb-3">Étape {props.index}</h3>
-        <Show when={props.grade && props.grade?.[1] > 0}>
+        <Show when={props.grade?.[1] ?? 0 > 0}>
           <h4>{props.grade?.join("/")}</h4>
         </Show>
       </div>
