@@ -92,10 +92,21 @@ export default function Exercise<N extends ModuleNames>(
   );
   const next = createMemo(() => {
     if (grades().length === 0) return "start" as const;
-    return grades()[grades().length - 1]!.next;
+    return grades()[0]!.next;
   });
   return (
-    <Suspense>
+    <div class="flex flex-col-reverse">
+      <Show when={next()}>
+        <Step index={attempt.length + 1}>
+          {/* @ts-ignore */}
+          <form method="post" action={submitExercise.with(exercise(), next())}>
+            <Dynamic component={component()} {...props} step={next()} />
+            <Show when={!submission.pending} fallback={<p>Soumission...</p>}>
+              <Button color="green">Corriger</Button>
+            </Show>
+          </form>
+        </Step>
+      </Show>
       <For each={attempt}>
         {(part, i) => {
           const feedback = createAsync(async () => {
@@ -121,18 +132,7 @@ export default function Exercise<N extends ModuleNames>(
           );
         }}
       </For>
-      <Show when={next()}>
-        <Step index={attempt.length + 1}>
-          {/* @ts-ignore */}
-          <form method="post" action={submitExercise.with(exercise(), next())}>
-            <Dynamic component={component()} {...props} step={next()} />
-            <Show when={!submission.pending} fallback={<p>Soumission...</p>}>
-              <Button color="green">Corriger</Button>
-            </Show>
-          </form>
-        </Step>
-      </Show>
-    </Suspense>
+    </div>
   );
 }
 
@@ -153,7 +153,9 @@ function Step(props: {
     >
       <div class="flex justify-between">
         <h3 class="text-sky-900 text-xl font-bold mb-3">Étape {props.index}</h3>
-        <h4>{props.grade?.join("/")}</h4>
+        <Show when={props.grade && props.grade?.[1] > 0}>
+          <h4>{props.grade?.join("/")}</h4>
+        </Show>
       </div>
       <div>{props.children}</div>
     </fieldset>
