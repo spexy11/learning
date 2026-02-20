@@ -4,7 +4,6 @@ import registry from "./registry";
 import type { Exercise, ExerciseTemplate, Part, View } from "./types";
 import {
   createEffect,
-  createMemo,
   For,
   type JSX,
   lazy,
@@ -13,13 +12,7 @@ import {
   type Component,
 } from "solid-js";
 import { createStore } from "solid-js/store";
-import {
-  action,
-  createAsync,
-  createAsyncStore,
-  json,
-  useSubmission,
-} from "@solidjs/router";
+import { action, createAsyncStore, useSubmission } from "@solidjs/router";
 import { getSchema } from "./schema";
 import { Button } from "@learning/components";
 
@@ -86,10 +79,10 @@ export default function Exercise<N extends ModuleNames>(
   const exercise = () => ({ ...props, attempt }) as typeof props;
   const grades = createAsyncStore(() => gradeExercise(exercise()));
   const feedback = createAsyncStore(() => getFullFeedback(exercise()));
-  const next = createMemo(() => {
+  const next = () => {
     if (grades()?.length === 0) return "start" as const;
     return grades()?.[0]!.next ?? null;
-  });
+  };
   return (
     <div class="flex flex-col-reverse">
       <Show when={next()}>
