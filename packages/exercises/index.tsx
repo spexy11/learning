@@ -3,7 +3,7 @@ import {
   createGradeFunction,
   type Register,
 } from "@learning/core";
-import MathFactor from "./math/Factor";
+import MathFactor from "./math/factor.server";
 import MathSimple from "./math/Simple";
 import { query } from "@solidjs/router";
 

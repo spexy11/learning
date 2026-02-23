@@ -1,3 +1,4 @@
+import type { Component } from "solid-js";
 import * as v from "valibot";
 
 type Infer<
@@ -114,6 +115,10 @@ export type Props<
   K extends keyof T["steps"] & string = keyof T["steps"] & string,
 > = FeedbackInput<T, K> & { feedback?: FeedbackReturn<T, F, K> };
 
-export type View<T extends Schema, F extends Feedback<T>> = {
-  [K in keyof T["steps"] & string]: Props<T, F, K>;
+type Module = { schema: Schema; feedback: any };
+
+export type View<T extends Module> = {
+  [K in keyof T["schema"]["steps"] & string]: Component<
+    Props<T["schema"], T["feedback"], K>
+  >;
 };
