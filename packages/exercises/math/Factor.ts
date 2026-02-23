@@ -1,17 +1,16 @@
-import { expr } from "@learning/core";
-import z from "zod/v4";
-import type { Feedback, Schema } from "../../utils/types";
+import { expr, type Feedback, type Schema } from "@learning/core";
 import { mapAsync } from "es-toolkit";
+import * as v from "valibot";
 
 export const schema = {
   name: "math/factor",
   question: {
-    expr: z.string(),
+    expr: v.string(),
   },
   steps: {
-    start: { attempt: z.string() },
-    binomial: { attempt: z.string() },
-    root: { root: z.string() },
+    start: { attempt: v.string() },
+    binomial: { attempt: v.string() },
+    root: { root: v.string() },
   },
 } as const satisfies Schema;
 
@@ -26,7 +25,7 @@ async function resolve<T extends Record<string, Promise<any> | any>>(
 }
 
 export const feedback = {
-  start: async function* ({ question, attempt: [{ state }] }) {
+  start: async function* ({ question, state }) {
     const isEqual = expr(state.attempt).isEqual(question.expr);
     const isFactored = expr(state.attempt).isFactored();
     const correct = resolve({ isEqual, isFactored }).then(
@@ -43,7 +42,9 @@ export const feedback = {
       else if (d.squaredSum || d.conj) return "binomial";
       else return "root";
     });
-    yield await Promise.all([grade, next]);
+    const [score, nextStep] = await Promise.all([grade, next]);
+    yield score;
+    yield nextStep;
 
     return await resolve({
       expanded: expr(state.attempt).expand().latex(),
@@ -52,10 +53,12 @@ export const feedback = {
       isFactored,
     });
   },
-  binomial: async function* ({ question, attempt: [{ state }] }) {
+  binomial: async function* () {
     yield [0, 0];
   },
-  root: async function* ({ question, attempt: [{ state }] }) {
+  root: async function* () {
     yield [0, 0];
   },
 } satisfies Feedback<typeof schema>;
+
+export default { schema, feedback };
