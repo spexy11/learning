@@ -60,6 +60,15 @@ export function GradedExercise<const R extends Register>(register: R) {
     }),
   );
 }
+type GradedExercise<R extends Register> = v.InferInput<
+  ReturnType<typeof GradedExercise<R>>
+>;
+
+export function createGradeFunction<const R extends Register>(register: R) {
+  return async (exercise: GradedExercise<R>) => {
+    return v.parseAsync(GradedExercise(register), exercise);
+  };
+}
 
 export type ServerModule<
   R extends Register,
