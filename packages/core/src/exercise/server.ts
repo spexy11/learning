@@ -13,7 +13,7 @@ type Module<T extends Schema, F extends Feedback<T>> = {
   feedback: F;
 };
 
-export type Register = Module<any, any>[];
+export type SchemaRegistry = Module<any, any>[];
 
 async function gradeExercise<T extends Schema, F extends Feedback<T>>(
   { feedback }: { schema: T; feedback: F },
@@ -38,7 +38,7 @@ async function gradeExercise<T extends Schema, F extends Feedback<T>>(
   return { name, question, attempt: graded };
 }
 
-function BaseExercise<const R extends Register>(
+function BaseExercise<const R extends SchemaRegistry>(
   register: R,
 ): v.VariantSchema<
   "name",
@@ -51,7 +51,7 @@ function BaseExercise<const R extends Register>(
   ) as any;
 }
 
-export function GradedExercise<const R extends Register>(register: R) {
+export function GradedExercise<const R extends SchemaRegistry>(register: R) {
   return v.pipeAsync(
     BaseExercise(register),
     v.transformAsync(async (exercise) => {
@@ -60,22 +60,26 @@ export function GradedExercise<const R extends Register>(register: R) {
     }),
   );
 }
-type GradedExercise<R extends Register> = v.InferInput<
+type GradedExercise<R extends SchemaRegistry> = v.InferInput<
   ReturnType<typeof GradedExercise<R>>
 >;
 
-export function createGradeFunction<const R extends Register>(register: R) {
+export function createGradeFunction<const R extends SchemaRegistry>(
+  register: R,
+) {
   return async (exercise: GradedExercise<R>) => {
     return v.parseAsync(GradedExercise(register), exercise);
   };
 }
 
 export type ServerModule<
-  R extends Register,
+  R extends SchemaRegistry,
   N extends R[number]["schema"]["name"],
 > = Extract<R[number], { schema: { name: N } }>;
 
-export function createFeedbackFunction<const R extends Register>(register: R) {
+export function createFeedbackFunction<const R extends SchemaRegistry>(
+  register: R,
+) {
   return async function <
     const N extends R[number]["schema"]["name"],
     const K extends keyof ServerModule<R, N>["schema"]["steps"] & string,

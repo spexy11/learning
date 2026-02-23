@@ -4,7 +4,7 @@ export {
   createFeedbackFunction,
   createGradeFunction,
   GradedExercise,
-  type Register,
+  type SchemaRegistry,
   type ServerModule,
 } from "./src/exercise/server";
 export { loadView } from "./src/exercise/Exercise";

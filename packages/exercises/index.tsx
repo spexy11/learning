@@ -1,15 +1,22 @@
 import {
   createFeedbackFunction,
   createGradeFunction,
-  type Register,
+  type SchemaRegistry,
 } from "@learning/core";
 import MathFactor from "./math/factor.server";
-import MathSimple from "./math/Simple";
-import { query } from "@solidjs/router";
+import MathSimple from "./math/Simple.server";
+import { action, query } from "@solidjs/router";
 
-const register = [MathFactor, MathSimple] as const satisfies Register;
+const schemaRegistry = [
+  MathFactor,
+  MathSimple,
+] as const satisfies SchemaRegistry;
 
-const feedbackFn = createFeedbackFunction(register);
+const viewRegistry = {
+  "math/factor": () => import("./math/factor.view"),
+};
+
+const feedbackFn = createFeedbackFunction(schemaRegistry);
 export const feedback = query(
   (async (input: any) => {
     "use server";
@@ -18,11 +25,8 @@ export const feedback = query(
   "feedback",
 );
 
-const gradeFn = createGradeFunction(register);
-export const grade = query(
-  (async (input: any) => {
-    "use server";
-    return gradeFn(input);
-  }) as unknown as typeof gradeFn,
-  "grade",
-);
+const gradeFn = createGradeFunction(schemaRegistry);
+export const grade = action((async (input: any) => {
+  "use server";
+  return gradeFn(input);
+}) as unknown as typeof gradeFn);
