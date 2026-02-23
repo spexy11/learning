@@ -3,6 +3,7 @@ import {
   For,
   lazy,
   Show,
+  Suspense,
   type Component,
   type ComponentProps,
 } from "solid-js";
@@ -15,7 +16,12 @@ import type {
   GradedExercise,
   SchemaRegistry,
 } from "./server";
-import { query, useSubmission, type Action } from "@solidjs/router";
+import {
+  createAsync,
+  query,
+  useSubmission,
+  type Action,
+} from "@solidjs/router";
 
 export type ViewRegistry = Record<string, Component<any>>;
 type Props<T extends View<any>> = ComponentProps<T[keyof T]>;
@@ -39,7 +45,7 @@ export function createExercise<
 >(
   viewRegistry: V,
   grade: Action<[BaseExercise<S>, string, FormData], GradedExercise<S>>,
-  feedback: ReturnType<
+  getFeedback: ReturnType<
     typeof query<ReturnType<typeof createFeedbackFunction<S>>>
   >,
 ) {
@@ -71,10 +77,24 @@ export function createExercise<
     return (
       <>
         <For each={attempt}>
-          {(part) => <Dynamic component={component()} {...props} {...part} />}
+          {(part) => {
+            const feedback = createAsync(() =>
+              getFeedback({ ...props, ...part }),
+            );
+            return (
+              <Suspense fallback="Correction en cours...">
+                <Dynamic
+                  component={component()}
+                  {...props}
+                  {...part}
+                  feedback={feedback()}
+                />
+              </Suspense>
+            );
+          }}
         </For>
         <Show when={next()}>
-          <form method="post" action={grade.with(props, "start")}>
+          <form method="post" action={grade.with(props, String(next()))}>
             <Dynamic component={component()} {...props} step={next()} />
             <button>Submit</button>
           </form>

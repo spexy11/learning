@@ -1,4 +1,4 @@
-import { MathField } from "@learning/components";
+import { CheckMark, MathField } from "@learning/components";
 import type { View } from "@learning/core";
 
 export default {
@@ -7,6 +7,7 @@ export default {
       <p>Factorisez l'expression suivante:</p>
       <MathField value={`${props.question.expr}=`} readOnly />
       <MathField name="attempt" value={props.state?.attempt ?? ""} />
+      <CheckMark correct={props.feedback?.correct} />
     </>
   ),
   binomial: (props) => (

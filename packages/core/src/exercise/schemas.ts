@@ -109,11 +109,16 @@ export type FeedbackReturn<
   K extends keyof T["steps"] & string,
 > = Promise<ReturnType<F[K]> extends AsyncGenerator<any, infer R> ? R : never>;
 
+type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
+
 export type Props<
   T extends Schema,
   F extends Feedback<T>,
   K extends keyof T["steps"] & string = keyof T["steps"] & string,
-> = FeedbackInput<T, K> & { feedback?: FeedbackReturn<T, F, K> };
+> = Optional<
+  FeedbackInput<T, K> & { feedback?: Awaited<FeedbackReturn<T, F, K>> },
+  "attempt" | "state"
+>;
 
 type Module = { schema: Schema; feedback: any };
 
