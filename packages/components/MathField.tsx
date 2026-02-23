@@ -27,11 +27,16 @@ export default function MathField(props: MathProps) {
   const [value, setValue] = createSignal(props.value);
   createEffect(() => setValue(props.value));
   const [local, attrs] = splitProps(props, ["name"]);
+  const cls = () => {
+    if (!props.readOnly) {
+      return " border border-slate-300 rounded";
+    }
+  };
 
   return (
     <>
       <math-field
-        class="bg-transparent text-xl"
+        class={`bg-transparent text-xl ${cls()}`}
         onInput={(e: InputEvent & { target: MathfieldElement }) =>
           setValue(e.target.value)
         }
