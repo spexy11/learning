@@ -12,10 +12,6 @@ const schemaRegistry = [
   MathSimple,
 ] as const satisfies SchemaRegistry;
 
-const viewRegistry = {
-  "math/factor": () => import("./math/factor.view"),
-};
-
 const feedbackFn = createFeedbackFunction(schemaRegistry);
 export const feedback = query(
   (async (input: any) => {
