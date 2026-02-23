@@ -50,6 +50,9 @@ function BaseExercise<const R extends SchemaRegistry>(
     register.map((m) => Exercise(m.schema)),
   ) as any;
 }
+export type BaseExercise<R extends SchemaRegistry> = v.InferOutput<
+  ReturnType<typeof GradedExercise<R>>
+>;
 
 export function GradedExercise<const R extends SchemaRegistry>(register: R) {
   return v.pipeAsync(
@@ -60,15 +63,22 @@ export function GradedExercise<const R extends SchemaRegistry>(register: R) {
     }),
   );
 }
-type GradedExercise<R extends SchemaRegistry> = v.InferInput<
+export type GradedExercise<R extends SchemaRegistry> = v.InferOutput<
   ReturnType<typeof GradedExercise<R>>
 >;
 
 export function createGradeFunction<const R extends SchemaRegistry>(
   register: R,
 ) {
-  return async (exercise: GradedExercise<R>) => {
-    return v.parseAsync(GradedExercise(register), exercise);
+  return async (exercise: BaseExercise<R>, step: string, form: FormData) => {
+    const lastPart = {
+      step,
+      state: Object.fromEntries(form.entries()),
+    };
+    return v.parseAsync(GradedExercise(register), {
+      ...exercise,
+      attempt: [...exercise.attempt, lastPart],
+    });
   };
 }
 
@@ -96,7 +106,7 @@ export function createFeedbackFunction<const R extends SchemaRegistry>(
     >
   > {
     const m = register.find((m) => m.schema.name === input.name);
-    if (!m) throw new Error(`Module ${input.name} e not in the register`);
+    if (!m) throw new Error(`Module ${input.name} is not in the registry`);
     const gen = m.feedback[input.step](input);
     while (true) {
       const { done, value } = await gen.next();

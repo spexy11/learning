@@ -5,7 +5,8 @@ export default {
   start: (props) => (
     <>
       <p>Factorisez l'expression suivante:</p>
-      <MathField value={props.question.expr} />
+      <MathField value={`${props.question.expr}=`} readOnly />
+      <MathField name="attempt" value={props.state?.attempt ?? ""} />
     </>
   ),
   binomial: (props) => (
@@ -18,4 +19,4 @@ export default {
       <p>Hello world</p>
     </>
   ),
-} satisfies View<typeof import("./factor.server")>;
+} as View<typeof import("./factor.server")>;
