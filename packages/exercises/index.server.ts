@@ -1,5 +1,6 @@
 import {
   createFeedbackFunction,
+  createGetSchemaInfo,
   createGradeFunction,
   type SchemaRegistry as Registry,
 } from "@learning/core";
@@ -24,3 +25,16 @@ export const grade = action((async (...args: [any, any, any]) => {
   "use server";
   return gradeFn(...args);
 }) as unknown as typeof gradeFn);
+
+const getSchemaInfoFn = createGetSchemaInfo(schemaRegistry);
+export const getSchemaInfo = query(
+  (async () => {
+    "use server";
+    try {
+      return getSchemaInfoFn();
+    } catch (error) {
+      console.error(error);
+    }
+  }) as unknown as typeof getSchemaInfoFn,
+  "getSchemaInfo",
+);

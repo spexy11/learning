@@ -1,4 +1,4 @@
-import { mapAsync } from "es-toolkit";
+import { keyBy, mapAsync } from "es-toolkit";
 import {
   Exercise,
   FeedbackInput,
@@ -39,7 +39,7 @@ async function gradeExercise<T extends Schema, F extends Feedback<T>>(
 }
 
 function BaseExercise<const R extends SchemaRegistry>(
-  register: R,
+  registry: R,
 ): v.VariantSchema<
   "name",
   ReturnType<typeof Exercise<R[number]["schema"]>>[],
@@ -47,18 +47,52 @@ function BaseExercise<const R extends SchemaRegistry>(
 > {
   return v.variant(
     "name",
-    register.map((m) => Exercise(m.schema)),
+    registry.map((m) => Exercise(m.schema)),
   ) as any;
 }
 export type BaseExercise<R extends SchemaRegistry> = v.InferOutput<
   ReturnType<typeof GradedExercise<R>>
 >;
 
-export function GradedExercise<const R extends SchemaRegistry>(register: R) {
+const Meta = v.object({
+  type: v.optional(
+    v.union([
+      v.literal("textarea"),
+      v.literal("input"),
+      v.literal("latex"),
+      v.literal("markdown"),
+    ]),
+    "input",
+  ),
+});
+
+export function createGetSchemaInfo<const R extends SchemaRegistry>(
+  registry: R,
+) {
+  return async function () {
+    const schema = BaseExercise(registry);
+    return schema.options.map((s) => ({
+      name: s.entries.name.literal,
+      question: Object.entries(s.entries.question.entries).map(
+        ([name, value]: [string, any]) => {
+          return {
+            name,
+            ...v.parse(Meta, v.getMetadata(value)),
+            title: v.getTitle(value),
+            description: v.getDescription(value),
+            examples: v.getExamples(value),
+          };
+        },
+      ),
+    }));
+  };
+}
+
+export function GradedExercise<const R extends SchemaRegistry>(registry: R) {
   return v.pipeAsync(
-    BaseExercise(register),
+    BaseExercise(registry),
     v.transformAsync(async (exercise) => {
-      const m = register.find((m) => m.schema.name === exercise.name)!;
+      const m = registry.find((m) => m.schema.name === exercise.name)!;
       return gradeExercise(m, exercise);
     }),
   );
@@ -68,14 +102,14 @@ export type GradedExercise<R extends SchemaRegistry> = v.InferOutput<
 >;
 
 export function createGradeFunction<const R extends SchemaRegistry>(
-  register: R,
+  registry: R,
 ) {
   return async (exercise: BaseExercise<R>, step: string, form: FormData) => {
     const lastPart = {
       step,
       state: Object.fromEntries(form.entries()),
     };
-    return v.parseAsync(GradedExercise(register), {
+    return v.parseAsync(GradedExercise(registry), {
       ...exercise,
       attempt: [...exercise.attempt, lastPart],
     });
@@ -88,7 +122,7 @@ export type ServerModule<
 > = Extract<R[number], { schema: { name: N } }>;
 
 export function createFeedbackFunction<const R extends SchemaRegistry>(
-  register: R,
+  registry: R,
 ) {
   return async function <
     const N extends R[number]["schema"]["name"],
@@ -105,7 +139,7 @@ export function createFeedbackFunction<const R extends SchemaRegistry>(
       K
     >
   > {
-    const m = register.find((m) => m.schema.name === input.name);
+    const m = registry.find((m) => m.schema.name === input.name);
     if (!m) throw new Error(`Module ${input.name} is not in the registry`);
     const gen = m.feedback[input.step](input);
     while (true) {

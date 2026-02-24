@@ -7,9 +7,10 @@ export const schema = {
   question: {
     expr: v.pipe(
       v.string(),
+      v.title("Expression"),
       v.description("L'expression à factoriser, entrée en LaTeX."),
       v.examples(["x^2 - 5x + 6", "x^2 - 1"]),
-      v.metadata({ math: true }),
+      v.metadata({ type: "latex" }),
     ),
   },
   steps: {

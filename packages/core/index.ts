@@ -2,6 +2,7 @@ export { expr } from "./src/expr";
 export { type Schema, type Feedback, type View } from "./src/exercise/schemas";
 export {
   createFeedbackFunction,
+  createGetSchemaInfo,
   createGradeFunction,
   GradedExercise,
   type SchemaRegistry,
