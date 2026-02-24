@@ -125,7 +125,7 @@ function Step(props: {
       class="container rounded-xl my-4 mx-auto p-4 shadow-sm"
       classList={{
         "bg-blue-50 hover:bg-blue-100": !props.disabled,
-        "bg-white hover:bg-slate-50": props.disabled === true,
+        "bg-slate-50 hover:bg-slate-100": props.disabled === true,
       }}
       disabled={props.disabled === true}
     >
