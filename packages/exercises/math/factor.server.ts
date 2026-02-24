@@ -32,25 +32,16 @@ async function resolve<T extends Record<string, Promise<any> | any>>(
 
 export const feedback = {
   start: async function* ({ question, state }) {
-    const isEqual = expr(state.attempt).isEqual(question.expr);
-    const isFactored = expr(state.attempt).isFactored();
-    const correct = resolve({ isEqual, isFactored }).then(
-      (d) => d.isEqual && d.isFactored,
-    );
+    const isEqual = await expr(state.attempt).isEqual(question.expr);
+    const isFactored = await expr(state.attempt).isFactored();
+    const correct = isEqual && isFactored;
+    yield [Number(correct), 1];
 
-    const grade = correct.then((c) => [Number(c), 1] as [number, number]);
-    const next = resolve({
-      correct,
-      squaredSum: expr(question.expr).matches("(a + b)^2"),
-      conj: expr(question.expr).matches("(a + b)(a - b)"),
-    }).then((d) => {
-      if (d.correct) return null;
-      else if (d.squaredSum || d.conj) return "binomial";
-      else return "root";
-    });
-    const [score, nextStep] = await Promise.all([grade, next]);
-    yield score;
-    yield nextStep;
+    const squaredSum = await expr(question.expr).matches("(a + b)^2");
+    const conj = await expr(question.expr).matches("(a + b)(a - b)");
+    if (correct) yield null;
+    else if (squaredSum || conj) yield "binomial";
+    else yield "root";
 
     return await resolve({
       expanded: expr(state.attempt).expand().latex(),
