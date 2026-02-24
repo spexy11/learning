@@ -23,6 +23,7 @@ import {
   useSubmission,
   type Action,
 } from "@solidjs/router";
+import { Button } from "@learning/components";
 
 export type ViewRegistry = Record<string, Component<any>>;
 type Props<T extends View<any>> = ComponentProps<T[keyof T]>;
@@ -105,7 +106,7 @@ export function createExercise<
                 step={next()}
                 feedback={() => undefined}
               />
-              <button>Submit</button>
+              <Button color="green">Soumettre</Button>
             </Step>
           </form>
         </Show>
