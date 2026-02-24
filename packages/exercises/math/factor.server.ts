@@ -5,11 +5,16 @@ import * as v from "valibot";
 export const schema = {
   name: "math/factor",
   question: {
-    expr: v.string(),
+    expr: v.pipe(
+      v.string(),
+      v.description("L'expression à factoriser, entrée en LaTeX."),
+      v.examples(["x^2 - 5x + 6", "x^2 - 1"]),
+      v.metadata({ math: true }),
+    ),
   },
   steps: {
     start: { attempt: v.string() },
-    binomial: { attempt: v.string() },
+    binomial: { type: v.union([v.literal("square"), v.literal("conjugate")]) },
     root: { root: v.string() },
   },
 } as const satisfies Schema;
@@ -53,8 +58,14 @@ export const feedback = {
       isFactored,
     });
   },
-  binomial: async function* () {
+  binomial: async function* ({ question, state }) {
+    const conjugate = expr(question.expr).matches("(a + b)(a - b)");
+    const correct = await conjugate.then(
+      (c) => (state.type === "conjugate") === c,
+    );
     yield [0, 0];
+    yield correct ? "start" : null;
+    return { correct };
   },
   root: async function* () {
     yield [0, 0];
