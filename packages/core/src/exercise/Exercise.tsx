@@ -89,7 +89,7 @@ export function createExercise<
                     component={component()}
                     {...props}
                     {...part}
-                    feedback={feedback()}
+                    feedback={feedback}
                   />
                 </Suspense>
               </Step>
@@ -99,7 +99,12 @@ export function createExercise<
         <Show when={next()}>
           <form method="post" action={grade.with(props, String(next()))}>
             <Step index={attempt.length + 1}>
-              <Dynamic component={component()} {...props} step={next()} />
+              <Dynamic
+                component={component()}
+                {...props}
+                step={next()}
+                feedback={() => undefined}
+              />
               <button>Submit</button>
             </Step>
           </form>

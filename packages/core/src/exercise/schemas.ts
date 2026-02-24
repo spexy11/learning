@@ -116,7 +116,9 @@ export type Props<
   F extends Feedback<T>,
   K extends keyof T["steps"] & string = keyof T["steps"] & string,
 > = Optional<
-  FeedbackInput<T, K> & { feedback?: Awaited<FeedbackReturn<T, F, K>> },
+  FeedbackInput<T, K> & {
+    feedback: () => Awaited<FeedbackReturn<T, F, K> | undefined>;
+  },
   "attempt" | "state"
 >;
 

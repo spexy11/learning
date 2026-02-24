@@ -1,5 +1,6 @@
 import { CheckMark, MathField } from "@learning/components";
 import type { View } from "@learning/core";
+import { Suspense } from "solid-js";
 
 export default {
   start: (props) => (
@@ -11,7 +12,7 @@ export default {
       <div class="flex items-center justify-center">
         <MathField value={`${props.question.expr}=`} readOnly />
         <MathField name="attempt" value={props.state?.attempt ?? ""} />
-        <CheckMark correct={props.feedback?.correct} />
+        <CheckMark correct={() => props.feedback()?.correct} />
       </div>
     </>
   ),
@@ -40,7 +41,7 @@ export default {
           />
           <MathField value={`(a + b)(a - b)`} readOnly />
         </label>
-        <CheckMark correct={props.feedback?.correct} />
+        <CheckMark correct={() => props.feedback()?.correct} />
       </div>
     </>
   ),
