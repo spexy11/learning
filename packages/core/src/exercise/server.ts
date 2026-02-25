@@ -1,4 +1,4 @@
-import { keyBy, mapAsync } from "es-toolkit";
+import { mapAsync } from "es-toolkit";
 import {
   Exercise,
   FeedbackInput,

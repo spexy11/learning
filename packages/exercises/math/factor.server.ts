@@ -5,13 +5,11 @@ import * as v from "valibot";
 export const schema = {
   name: "math/factor",
   question: {
-    expr: v.pipe(
-      v.string(),
-      v.title("Expression"),
-      v.description("L'expression à factoriser, entrée en LaTeX."),
-      v.examples(["x^2 - 5x + 6", "x^2 - 1"]),
-      v.metadata({ type: "latex" }),
-    ),
+    expr: {
+      type: "latex",
+      label: "Expression",
+      description: "L'expression à factoriser",
+    },
   },
   steps: {
     start: { attempt: v.string() },

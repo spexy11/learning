@@ -1,3 +1,4 @@
+import { mapValues } from "es-toolkit";
 import type { Component } from "solid-js";
 import * as v from "valibot";
 
@@ -14,9 +15,31 @@ type Infer<
 
 type RawShape = Record<string, v.BaseSchema<any, any, any>>;
 
+const fieldTypes = {
+  latex: v.string(),
+  markdown: v.string(),
+  text: v.string(),
+  checkbox: v.boolean(),
+} as const;
+
+type Field = {
+  type: keyof typeof fieldTypes;
+  label: string;
+  description: string;
+};
+
+function parseField<const F extends Field>(field: F) {
+  return v.pipe(
+    fieldTypes[field.type as F["type"]],
+    v.title(field.label),
+    v.description(field.description),
+    v.metadata({ type: field.type as F["type"] }),
+  );
+}
+
 export type Schema = {
   name: string;
-  question: RawShape;
+  question: Record<string, Field>;
   steps: Record<string, RawShape>;
 };
 
@@ -77,7 +100,7 @@ export type Part<
 export function Exercise<const T extends Schema>(schema: T) {
   return v.object({
     name: v.literal(schema.name as T["name"]),
-    question: v.object(schema.question as T["question"]),
+    question: v.object(mapValues(schema.question as T["question"], parseField)),
     attempt: v.pipe(v.array(Part(schema)), v.minLength(1)),
   });
 }
