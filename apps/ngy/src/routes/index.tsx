@@ -1,4 +1,4 @@
-import Exercise, { ExerciseEditor } from "@learning/exercises";
+import { ExerciseEditor } from "@learning/exercises";
 
 export default function Home() {
   return (

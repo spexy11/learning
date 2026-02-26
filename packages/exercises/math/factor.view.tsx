@@ -1,6 +1,5 @@
 import { CheckMark, MathField } from "@learning/components";
 import type { View } from "@learning/core";
-import { Suspense } from "solid-js";
 
 export default {
   start: (props) => (

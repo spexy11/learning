@@ -1,4 +1,3 @@
-import * as v from "valibot";
 import { expr, field, type Feedback, type Schema } from "@learning/core";
 
 export const schema = {
