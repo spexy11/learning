@@ -1,15 +1,13 @@
-import { expr, type Feedback, type Schema } from "@learning/core";
-import { mapAsync } from "es-toolkit";
+import { expr, field, type Feedback, type Schema } from "@learning/core";
 import * as v from "valibot";
 
 export const schema = {
   name: "math/factor",
   question: {
-    expr: {
-      type: "latex",
+    expr: field("math").meta({
       label: "Expression",
       description: "L'expression à factoriser",
-    },
+    }),
   },
   steps: {
     start: { attempt: v.string() },

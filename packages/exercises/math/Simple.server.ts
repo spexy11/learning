@@ -1,29 +1,25 @@
 import * as v from "valibot";
-import { expr, type Feedback, type Schema } from "@learning/core";
+import { expr, field, type Feedback, type Schema } from "@learning/core";
 
 export const schema = {
   name: "math/simple",
   question: {
-    text: {
-      type: "markdown",
+    text: field("markdown").meta({
       label: "Énoncé",
       description: "Énoncé de l'exercice",
-    },
-    answer: {
-      type: "latex",
+    }),
+    answer: field("math").meta({
       label: "Réponse",
       description: "Réponse de l'exercice",
-    },
-    label: {
-      type: "markdown",
+    }),
+    label: field("markdown").meta({
       label: "Libellé de la réponse",
       description: "Texte affiché juste avant le champ de la réponse",
-    },
-    unit: {
-      type: "markdown",
+    }),
+    unit: field("markdown").meta({
       label: "Unité",
       description: "Texte affiché juste après le champ de la réponse",
-    },
+    }),
   },
   steps: {
     start: { attempt: v.string() },
