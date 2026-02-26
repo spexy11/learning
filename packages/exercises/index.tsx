@@ -1,13 +1,40 @@
-import { action, createAsyncStore, json, useSubmission } from "@solidjs/router";
-import { getSchemaInfo } from "./gen.feedback";
+import { action, json, useSubmission } from "@solidjs/router";
 import { createSignal, For, Show } from "solid-js";
 import { Button, Field } from "@learning/components";
 import Exercise from "./gen.view";
+import BaseExercise from "./gen.schema";
+import * as v from "valibot";
+
+const Meta = v.object({
+  type: v.optional(
+    v.union([
+      v.literal("textarea"),
+      v.literal("input"),
+      v.literal("latex"),
+      v.literal("markdown"),
+    ]),
+    "input",
+  ),
+});
+
+const info = BaseExercise.options.map((s) => ({
+  name: s.entries.name.literal,
+  question: Object.entries(s.entries.question.entries).map(
+    ([name, value]: [string, any]) => {
+      return {
+        name,
+        ...v.parse(Meta, v.getMetadata(value)),
+        title: v.getTitle(value),
+        description: v.getDescription(value),
+        examples: v.getExamples(value),
+      };
+    },
+  ),
+}));
 
 export function ExerciseEditor() {
-  const info = createAsyncStore(() => getSchemaInfo());
-  const [selected, setSelected] = createSignal<null | string>("math/factor");
-  const meta = () => info()?.find((e) => e.name === selected());
+  const [selected, setSelected] = createSignal("math/factor");
+  const meta = () => info.find((e) => e.name === selected());
   const submitExercise = action(async (name: string, form: FormData) => {
     return json(
       {
@@ -29,11 +56,12 @@ export function ExerciseEditor() {
         <Field
           component="select"
           label="Exercice"
+          value={selected()}
           onChange={(e) => {
             setSelected(e.target.value);
           }}
         >
-          <For each={info()}>
+          <For each={info}>
             {(exercise) => (
               <option value={exercise.name}>{exercise.name}</option>
             )}

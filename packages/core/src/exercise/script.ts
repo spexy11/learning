@@ -46,7 +46,6 @@ async function generateQueries() {
   const content = String.raw`
     import {
       createFeedbackFunction,
-      createGetSchemaInfo,
       createGradeFunction,
       type SchemaRegistry as Registry,
     } from "@learning/core";
@@ -73,19 +72,6 @@ async function generateQueries() {
       "use server";
       return gradeFn(...args);
     }) as unknown as typeof gradeFn);
-
-    const getSchemaInfoFn = createGetSchemaInfo(feedbackRegistry);
-    export const getSchemaInfo = query(
-      (async () => {
-        "use server";
-        try {
-          return getSchemaInfoFn();
-        } catch (error) {
-          console.error(error);
-        }
-      }) as unknown as typeof getSchemaInfoFn,
-      "getSchemaInfo",
-    );
   `.replace(/^ {4}/gm, "");
   return await Bun.write("./gen.feedback.ts", content);
 }

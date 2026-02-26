@@ -54,40 +54,6 @@ export type BaseExercise<R extends SchemaRegistry> = v.InferOutput<
   ReturnType<typeof GradedExercise<R>>
 >;
 
-const Meta = v.object({
-  type: v.optional(
-    v.union([
-      v.literal("textarea"),
-      v.literal("input"),
-      v.literal("latex"),
-      v.literal("markdown"),
-    ]),
-    "input",
-  ),
-});
-
-export function createGetSchemaInfo<const R extends SchemaRegistry>(
-  registry: R,
-) {
-  return async function () {
-    const schema = BaseExercise(registry);
-    return schema.options.map((s) => ({
-      name: s.entries.name.literal,
-      question: Object.entries(s.entries.question.entries).map(
-        ([name, value]: [string, any]) => {
-          return {
-            name,
-            ...v.parse(Meta, v.getMetadata(value)),
-            title: v.getTitle(value),
-            description: v.getDescription(value),
-            examples: v.getExamples(value),
-          };
-        },
-      ),
-    }));
-  };
-}
-
 export function GradedExercise<const R extends SchemaRegistry>(registry: R) {
   return v.pipeAsync(
     BaseExercise(registry),

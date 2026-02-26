@@ -8,7 +8,6 @@ export {
 } from "./src/exercise/schemas";
 export {
   createFeedbackFunction,
-  createGetSchemaInfo,
   createGradeFunction,
   GradedExercise,
   type SchemaRegistry,
