@@ -22,7 +22,7 @@ export const schema = {
     }),
   },
   steps: {
-    start: { attempt: v.string() },
+    start: { attempt: field("math") },
   },
 } as const satisfies Schema;
 

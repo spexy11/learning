@@ -10,9 +10,9 @@ export const schema = {
     }),
   },
   steps: {
-    start: { attempt: v.string() },
-    binomial: { type: v.union([v.literal("square"), v.literal("conjugate")]) },
-    root: { root: v.string() },
+    start: { attempt: field("math") },
+    binomial: { type: field("select").options("square", "conjugate") },
+    root: { root: field("math") },
   },
 } as const satisfies Schema;
 
