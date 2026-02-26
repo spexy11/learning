@@ -1,20 +1,8 @@
-import { createExercise, loadView, type ViewRegistry } from "@learning/core";
-import { grade, type SchemaRegistry, feedback } from "./index.server";
 import { action, createAsyncStore, json, useSubmission } from "@solidjs/router";
 import { getSchemaInfo } from "./index.server";
 import { createSignal, For, Show } from "solid-js";
 import { Button, Field } from "@learning/components";
-import * as v from "valibot";
-
-const viewRegistry = {
-  "math/factor": loadView(() => import("./math/factor.view")),
-} as const satisfies ViewRegistry;
-
-const Exercise = createExercise<SchemaRegistry, typeof viewRegistry>(
-  viewRegistry,
-  grade,
-  feedback,
-);
+import Exercise from "./gen.view";
 
 export function ExerciseEditor() {
   const info = createAsyncStore(() => getSchemaInfo());

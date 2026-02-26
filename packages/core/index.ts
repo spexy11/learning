@@ -1,6 +1,11 @@
 export { expr } from "./src/expr";
 export { field } from "./src/exercise/field";
-export { type Schema, type Feedback, type View } from "./src/exercise/schemas";
+export {
+  Exercise,
+  type Schema,
+  type Feedback,
+  type View,
+} from "./src/exercise/schemas";
 export {
   createFeedbackFunction,
   createGetSchemaInfo,

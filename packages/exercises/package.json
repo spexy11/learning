@@ -17,5 +17,8 @@
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "scripts": {
+    "dev": "bun --watch ../core/src/exercise/script.ts"
   }
 }
