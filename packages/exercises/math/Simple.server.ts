@@ -32,5 +32,3 @@ export const feedback = {
     return { equal };
   },
 } satisfies Feedback<typeof schema>;
-
-export default { schema, feedback };

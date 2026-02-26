@@ -46,5 +46,3 @@ export const feedback = {
     yield [0, 0];
   },
 } satisfies Feedback<typeof schema>;
-
-export default { schema, feedback };
