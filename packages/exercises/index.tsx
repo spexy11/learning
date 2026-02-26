@@ -1,5 +1,5 @@
 import { action, createAsyncStore, json, useSubmission } from "@solidjs/router";
-import { getSchemaInfo } from "./index.server";
+import { getSchemaInfo } from "./gen.feedback";
 import { createSignal, For, Show } from "solid-js";
 import { Button, Field } from "@learning/components";
 import Exercise from "./gen.view";

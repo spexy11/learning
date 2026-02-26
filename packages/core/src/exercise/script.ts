@@ -9,14 +9,14 @@ async function glob(pattern: string) {
 async function generateUI() {
   const files = await glob("**/*.view.tsx");
   const content = String.raw`
-    import { grade, type SchemaRegistry, feedback } from "./index.server";
+    import { grade, type FeedbackRegistry, feedback } from "./gen.feedback";
     import { createExercise, loadView } from "@learning/core";
 
     const viewRegistry = {
       ${files.map((path) => `"${path.replace(".view.tsx", "")}": loadView(() => import('./${path.replace(".tsx", "")}')),`).join("\n      ")}
     } as const
 
-    const Exercise = createExercise<SchemaRegistry, typeof viewRegistry>(
+    const Exercise = createExercise<FeedbackRegistry, typeof viewRegistry>(
       viewRegistry,
       grade,
       feedback,
@@ -38,14 +38,65 @@ async function generateSchema() {
     ])
     export default schema;
   `.replace(/^ {4}/gm, "");
-  await Bun.write("./gen.schema.ts", content);
+  return await Bun.write("./gen.schema.ts", content);
+}
+
+async function generateQueries() {
+  const files = (await glob("**/*.server.ts")).filter((p) => p.includes("/"));
+  const content = String.raw`
+    import {
+      createFeedbackFunction,
+      createGetSchemaInfo,
+      createGradeFunction,
+      type SchemaRegistry as Registry,
+    } from "@learning/core";
+    import { action, query } from "@solidjs/router";
+
+    ${files.map((path, i) => `import * as feedback${i} from "./${path}"`).join("\n")}
+
+    const feedbackRegistry = [
+      ${files.map((path, i) => `feedback${i},`).join("\n      ")}
+    ] as const satisfies Registry
+    export type FeedbackRegistry = typeof feedbackRegistry;
+
+    export const feedbackFn = createFeedbackFunction(feedbackRegistry);
+    export const feedback = query(
+      (async (input: any) => {
+        "use server";
+        return feedbackFn(input);
+      }) as unknown as typeof feedbackFn,
+      "feedback",
+    );
+
+    const gradeFn = createGradeFunction(feedbackRegistry);
+    export const grade = action((async (...args: [any, any, any]) => {
+      "use server";
+      return gradeFn(...args);
+    }) as unknown as typeof gradeFn);
+
+    const getSchemaInfoFn = createGetSchemaInfo(feedbackRegistry);
+    export const getSchemaInfo = query(
+      (async () => {
+        "use server";
+        try {
+          return getSchemaInfoFn();
+        } catch (error) {
+          console.error(error);
+        }
+      }) as unknown as typeof getSchemaInfoFn,
+      "getSchemaInfo",
+    );
+  `.replace(/^ {4}/gm, "");
+  return await Bun.write("./gen.feedback.ts", content);
+}
+
+async function runAll() {
+  return await Promise.all([generateUI(), generateSchema(), generateQueries()]);
 }
 
 const watcher = watch(".");
-generateUI();
-generateSchema();
+await runAll();
 for await (const event of watcher) {
   console.log(`Detected ${event.eventType} in ${event.filename}`);
-  generateUI();
-  generateSchema();
+  await runAll();
 }
