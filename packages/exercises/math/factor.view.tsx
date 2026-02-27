@@ -6,12 +6,12 @@ export default {
     <>
       <p>
         Factorise <strong>complètement</strong> l'expression{" "}
-        <Field {...props.field.question.expr} />
+        {props.field.question.expr}
       </p>
       <div class="flex items-center justify-center">
-        <Field {...props.field.question.expr} />
+        {props.field.question.expr}
         <MathField value="=" readOnly />
-        <Field {...props.field.state.attempt} />
+        {props.field.state.attempt}
         <CheckMark correct={() => props.feedback()?.correct} />
       </div>
     </>
@@ -19,7 +19,7 @@ export default {
   binomial: (props) => (
     <>
       <p>
-        L'expression <Field {...props.field.question.expr} /> est un{" "}
+        L'expression {props.field.question.expr} est un{" "}
         <strong>produit remarquable</strong>.
       </p>
       <div class="flex items-center justify-center gap-8">
@@ -47,9 +47,7 @@ export default {
   ),
   root: (props) => (
     <>
-      <p>
-        Trouvez une racine de <Field {...props.field.question.expr} />:
-      </p>
+      <p>Trouvez une racine de {props.field.question.expr} :</p>
       <MathField value={props.state?.root} />
     </>
   ),

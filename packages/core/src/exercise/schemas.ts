@@ -120,8 +120,8 @@ export type Props<
   FeedbackInput<T, K> & {
     feedback: () => Awaited<FeedbackReturn<T, F, K> | undefined>;
     field: {
-      question: Record<keyof T["question"], ComponentProps<typeof Field>>;
-      state: Record<keyof T["steps"][K], ComponentProps<typeof Field>>;
+      question: Record<keyof T["question"], Component>;
+      state: Record<keyof T["steps"][K], Component>;
     };
   },
   "attempt" | "state"

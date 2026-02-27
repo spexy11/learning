@@ -11,8 +11,8 @@ export const schema = {
   steps: {
     start: {
       attempt: field("math").meta({
-        label: "Tentative",
-        description: "Tentative de factorisation",
+        label: "Réponse",
+        description: "Entrez votre réponse ici",
       }),
     },
     binomial: { type: field("select").options("square", "conjugate") },

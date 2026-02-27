@@ -83,7 +83,7 @@ export function createExercise<
         question: mapValues(
           exerciseSchema.entries.question.entries,
           (field, name) => {
-            return {
+            const attrs = {
               type: (v.getMetadata(field).type as any) ?? "input",
               label: v.getTitle(field),
               title: v.getDescription(field),
@@ -91,10 +91,11 @@ export function createExercise<
               readOnly: true,
               hideLabel: true,
             } as ComponentProps<typeof Field>;
+            return () => <Field {...attrs} />;
           },
         ),
         state: mapValues(stateSchema.entries, (field, name) => {
-          return {
+          const attrs = {
             name,
             type: (v.getMetadata(field).type as any) ?? "input",
             label: v.getTitle(field),
@@ -103,6 +104,7 @@ export function createExercise<
             readOnly: state,
             hideLabel: true,
           } as ComponentProps<typeof Field>;
+          return () => <Field {...attrs} />;
         }),
       };
     };
