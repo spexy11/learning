@@ -41,7 +41,7 @@ export default function MathField(props: MathProps) {
           setValue(e.target.value)
         }
         {...attrs}
-        placeholder={`\\text{${attrs.placeholder}}`}
+        placeholder={`\\text{${attrs.placeholder ?? ""}}`}
       />
       <Show when={props.name}>
         <input type="hidden" name={props.name} value={String(value() || "")} />

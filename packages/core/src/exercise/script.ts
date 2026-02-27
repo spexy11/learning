@@ -10,6 +10,7 @@ async function generateUI() {
   const files = await glob("**/*.view.tsx");
   const content = String.raw`
     import { grade, type FeedbackRegistry, feedback } from "./gen.feedback";
+    import schema from "./gen.schema";
     import { createExercise, loadView } from "@learning/core";
 
     const viewRegistry = {
@@ -18,6 +19,7 @@ async function generateUI() {
 
     const Exercise = createExercise<FeedbackRegistry, typeof viewRegistry>(
       viewRegistry,
+      schema,
       grade,
       feedback,
     );

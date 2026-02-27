@@ -9,7 +9,12 @@ export const schema = {
     }),
   },
   steps: {
-    start: { attempt: field("math") },
+    start: {
+      attempt: field("math").meta({
+        label: "Tentative",
+        description: "Tentative de factorisation",
+      }),
+    },
     binomial: { type: field("select").options("square", "conjugate") },
     root: { root: field("math") },
   },

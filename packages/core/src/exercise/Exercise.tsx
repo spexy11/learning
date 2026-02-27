@@ -9,7 +9,7 @@ import {
   type JSX,
 } from "solid-js";
 import { Dynamic } from "solid-js/web";
-import type { View } from "./schemas";
+import type { Exercise, View } from "./schemas";
 import { createStore } from "solid-js/store";
 import type {
   BaseExercise,
@@ -23,7 +23,9 @@ import {
   useSubmission,
   type Action,
 } from "@solidjs/router";
-import { Button } from "@learning/components";
+import { Button, Field } from "@learning/components";
+import * as v from "valibot";
+import { mapValues } from "es-toolkit";
 
 export type ViewRegistry = Record<string, Component<any>>;
 type Props<T extends View<any>> = ComponentProps<T[keyof T]>;
@@ -41,11 +43,14 @@ export function loadView<T extends View<any>>(
   });
 }
 
+type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
+
 export function createExercise<
   S extends SchemaRegistry,
   V extends ViewRegistry,
 >(
   viewRegistry: V,
+  schema: v.VariantSchema<"name", ReturnType<typeof Exercise>[], undefined>,
   grade: Action<[BaseExercise<S>, string, FormData], GradedExercise<S>>,
   getFeedback: ReturnType<
     typeof query<ReturnType<typeof createFeedbackFunction<S>>>
@@ -64,6 +69,43 @@ export function createExercise<
         setAttempt(submission.result.attempt);
       }
     });
+    const field = ({
+      step,
+      state,
+    }: Optional<BaseExercise<S>["attempt"][number], "state">) => {
+      const exerciseSchema = schema.options.find(
+        (s) => s.entries.name.literal === props.name,
+      )!;
+      const stateSchema = exerciseSchema.entries.attempt.item.options.find(
+        (s) => s.entries.step.literal === step,
+      )!.entries.state;
+      return {
+        question: mapValues(
+          exerciseSchema.entries.question.entries,
+          (field, name) => {
+            return {
+              type: (v.getMetadata(field).type as any) ?? "input",
+              label: v.getTitle(field),
+              title: v.getDescription(field),
+              value: props.question[name],
+              readOnly: true,
+              hideLabel: true,
+            } as ComponentProps<typeof Field>;
+          },
+        ),
+        state: mapValues(stateSchema.entries, (field, name) => {
+          return {
+            name,
+            type: (v.getMetadata(field).type as any) ?? "input",
+            label: v.getTitle(field),
+            title: v.getDescription(field),
+            value: state?.[name] ?? "",
+            readOnly: state,
+            hideLabel: true,
+          } as ComponentProps<typeof Field>;
+        }),
+      };
+    };
 
     const component = () => {
       if (!(props.name in viewRegistry))
@@ -91,6 +133,7 @@ export function createExercise<
                     {...props}
                     {...part}
                     feedback={feedback}
+                    field={field(part)}
                   />
                 </Suspense>
               </Step>
@@ -105,6 +148,7 @@ export function createExercise<
                 {...props}
                 step={next()}
                 feedback={() => undefined}
+                field={field({ step: next()!, state: undefined } as any)}
               />
               <Button color="green">Soumettre</Button>
             </Step>

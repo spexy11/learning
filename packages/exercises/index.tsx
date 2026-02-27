@@ -54,7 +54,7 @@ export function ExerciseEditor() {
         action={submitExercise.with(selected() ?? "")}
       >
         <Field
-          component="select"
+          type="select"
           label="Exercice"
           value={selected()}
           onChange={(e) => {
@@ -73,7 +73,7 @@ export function ExerciseEditor() {
               {(field) => (
                 <Field
                   name={field.name}
-                  component={field.type as any}
+                  type={field.type as any}
                   label={field.title}
                   title={field.description}
                   placeholder={field.description}

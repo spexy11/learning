@@ -1,4 +1,4 @@
-import { CheckMark, MathField } from "@learning/components";
+import { CheckMark, Field, MathField } from "@learning/components";
 import type { View } from "@learning/core";
 
 export default {
@@ -6,11 +6,12 @@ export default {
     <>
       <p>
         Factorise <strong>complètement</strong> l'expression{" "}
-        <MathField value={props.question.expr} readOnly />
+        <Field {...props.field.question.expr} />
       </p>
       <div class="flex items-center justify-center">
-        <MathField value={`${props.question.expr}=`} readOnly />
-        <MathField name="attempt" value={props.state?.attempt ?? ""} />
+        <Field {...props.field.question.expr} />
+        <MathField value="=" readOnly />
+        <Field {...props.field.state.attempt} />
         <CheckMark correct={() => props.feedback()?.correct} />
       </div>
     </>
@@ -18,7 +19,7 @@ export default {
   binomial: (props) => (
     <>
       <p>
-        L'expression <MathField value={props.question.expr} readOnly /> est un{" "}
+        L'expression <Field {...props.field.question.expr} /> est un{" "}
         <strong>produit remarquable</strong>.
       </p>
       <div class="flex items-center justify-center gap-8">
@@ -46,7 +47,9 @@ export default {
   ),
   root: (props) => (
     <>
-      <p>Trouvez une racine de {props.question.expr}:</p>
+      <p>
+        Trouvez une racine de <Field {...props.field.question.expr} />:
+      </p>
       <MathField value={props.state?.root} />
     </>
   ),

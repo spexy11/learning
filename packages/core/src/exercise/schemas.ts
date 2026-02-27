@@ -1,4 +1,5 @@
-import type { Component } from "solid-js";
+import type { Field } from "@learning/components";
+import type { Component, ComponentProps } from "solid-js";
 import * as v from "valibot";
 
 type Infer<
@@ -78,7 +79,7 @@ export function Exercise<const T extends Schema>(schema: T) {
   return v.object({
     name: v.literal(schema.name as T["name"]),
     question: v.object(schema.question as T["question"]),
-    attempt: v.pipe(v.array(Part(schema)), v.minLength(1)),
+    attempt: v.array(Part(schema)),
   });
 }
 export type Exercise<T extends Schema> = Infer<typeof Exercise<T>>;
@@ -118,6 +119,10 @@ export type Props<
 > = Optional<
   FeedbackInput<T, K> & {
     feedback: () => Awaited<FeedbackReturn<T, F, K> | undefined>;
+    field: {
+      question: Record<keyof T["question"], ComponentProps<typeof Field>>;
+      state: Record<keyof T["steps"][K], ComponentProps<typeof Field>>;
+    };
   },
   "attempt" | "state"
 >;
