@@ -25,7 +25,7 @@ import {
 } from "@solidjs/router";
 import { Button, Field } from "@learning/components";
 import * as v from "valibot";
-import { mapValues } from "es-toolkit";
+import { isEqual, mapValues } from "es-toolkit";
 
 export type ViewRegistry = Record<string, Component<any>>;
 type Props<T extends View<any>> = ComponentProps<T[keyof T]>;
@@ -57,7 +57,7 @@ export function createExercise<
   >,
 ) {
   return function Exercise(props: BaseExercise<S>) {
-    const submission = useSubmission(grade);
+    const submission = useSubmission(grade, ([ex]) => isEqual(props, ex));
     const [attempt, setAttempt] = createStore<BaseExercise<S>["attempt"]>([]);
     createEffect(() => {
       if (props.attempt) {
