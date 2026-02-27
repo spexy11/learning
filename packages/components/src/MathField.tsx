@@ -37,9 +37,14 @@ export default function MathField(props: MathProps) {
     <>
       <math-field
         class={`bg-transparent text-xl ${cls()}`}
-        onInput={(e: InputEvent & { target: MathfieldElement }) =>
-          setValue(e.target.value)
-        }
+        onInput={(event: InputEvent & { target: MathfieldElement }) => {
+          setValue(event.target.value);
+        }}
+        onkeydown={(event: KeyboardEvent & { target: MathfieldElement }) => {
+          if (event.key === "Enter") {
+            event.target.closest("form")?.requestSubmit();
+          }
+        }}
         {...attrs}
         placeholder={`\\text{${attrs.placeholder ?? ""}}`}
       />
