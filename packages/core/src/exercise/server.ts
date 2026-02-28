@@ -23,7 +23,7 @@ type Module<
   feedback: F;
 };
 
-export type SchemaRegistry = Module<any, any, any>[];
+export type ModelRegistry = Module<any, any, any>[];
 
 async function gradeExercise<T extends Schema, F extends Feedback<T>>(
   { feedback }: { schema: T; feedback: F },
@@ -48,7 +48,7 @@ async function gradeExercise<T extends Schema, F extends Feedback<T>>(
   return { name, question, attempt: graded };
 }
 
-function BaseExercise<const R extends SchemaRegistry>(
+function BaseExercise<const R extends ModelRegistry>(
   registry: R,
 ): v.VariantSchema<
   "name",
@@ -64,11 +64,11 @@ function BaseExercise<const R extends SchemaRegistry>(
     registry.map((m) => Exercise(m.schema)),
   ) as any;
 }
-export type BaseExercise<R extends SchemaRegistry> = v.InferOutput<
+export type BaseExercise<R extends ModelRegistry> = v.InferOutput<
   ReturnType<typeof BaseExercise<R>>
 >;
 
-export function GradedExercise<const R extends SchemaRegistry>(registry: R) {
+export function GradedExercise<const R extends ModelRegistry>(registry: R) {
   return v.pipeAsync(
     BaseExercise(registry),
     v.transformAsync(async (exercise) => {
@@ -77,11 +77,11 @@ export function GradedExercise<const R extends SchemaRegistry>(registry: R) {
     }),
   );
 }
-export type GradedExercise<R extends SchemaRegistry> = v.InferOutput<
+export type GradedExercise<R extends ModelRegistry> = v.InferOutput<
   ReturnType<typeof GradedExercise<R>>
 >;
 
-export function createGradeFunction<const R extends SchemaRegistry>(
+export function createGradeFunction<const R extends ModelRegistry>(
   registry: R,
 ) {
   return async (exercise: BaseExercise<R>, step: string, form: FormData) => {
@@ -97,11 +97,11 @@ export function createGradeFunction<const R extends SchemaRegistry>(
 }
 
 export type ServerModule<
-  R extends SchemaRegistry,
+  R extends ModelRegistry,
   N extends R[number]["schema"]["name"],
 > = Extract<R[number], { schema: { name: N } }>;
 
-export function createFeedbackFunction<const R extends SchemaRegistry>(
+export function createFeedbackFunction<const R extends ModelRegistry>(
   registry: R,
 ) {
   return async function <
@@ -150,7 +150,7 @@ const Params = v.record(
 );
 type Params = v.InferInput<typeof Params>;
 
-function GeneratedExercise<const R extends SchemaRegistry>(
+function GeneratedExercise<const R extends ModelRegistry>(
   registry: R,
 ): v.VariantSchema<
   "name",
@@ -176,11 +176,11 @@ function GeneratedExercise<const R extends SchemaRegistry>(
     ),
   ) as any;
 }
-type GeneratedExercise<R extends SchemaRegistry> = v.InferInput<
+type GeneratedExercise<R extends ModelRegistry> = v.InferInput<
   ReturnType<typeof GeneratedExercise<R>>
 >;
 
-export function createGenerator<const R extends SchemaRegistry>(registry: R) {
+export function createGenerator<const R extends ModelRegistry>(registry: R) {
   return async function (
     rawExerciseStub: GeneratedExercise<R>,
   ): Promise<BaseExercise<R>> {

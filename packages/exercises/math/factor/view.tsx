@@ -51,4 +51,4 @@ export default {
       <MathField value={props.state?.root} />
     </>
   ),
-} as View<typeof import("./factor.server")>;
+} as View<typeof import("./model")>;

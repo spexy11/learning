@@ -12,7 +12,7 @@ export {
   createGenerator,
   createGradeFunction,
   GradedExercise,
-  type SchemaRegistry,
+  type ModelRegistry,
   type ServerModule,
 } from "./src/exercise/server";
 export {

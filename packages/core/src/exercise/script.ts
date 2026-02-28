@@ -7,7 +7,7 @@ async function glob(pattern: string) {
 }
 
 async function generateUI() {
-  const files = await glob("**/*.view.tsx");
+  const files = await glob("**/view.tsx");
   const content = String.raw`
     import { grade, type FeedbackRegistry, feedback } from "./gen.feedback";
     import schema from "./gen.schema";
@@ -29,7 +29,7 @@ async function generateUI() {
 }
 
 async function generateSchema() {
-  const files = (await glob("**/*.server.ts")).filter((p) => p.includes("/"));
+  const files = (await glob("**/model.ts")).filter((p) => p.includes("/"));
   const content = String.raw`
     import * as v from "valibot";
     import { Exercise } from "@learning/core";
@@ -44,13 +44,13 @@ async function generateSchema() {
 }
 
 async function generateQueries() {
-  const files = (await glob("**/*.server.ts")).filter((p) => p.includes("/"));
+  const files = (await glob("**/model.ts")).filter((p) => p.includes("/"));
   const content = String.raw`
     import {
       createFeedbackFunction,
       createGenerator,
       createGradeFunction,
-      type SchemaRegistry as Registry,
+      type ModelRegistry as Registry,
     } from "@learning/core";
     import { action, query } from "@solidjs/router";
 
