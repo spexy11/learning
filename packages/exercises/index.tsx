@@ -4,6 +4,7 @@ import { Button, Field } from "@learning/components";
 import Exercise from "./gen.view";
 import BaseExercise from "./gen.schema";
 import * as v from "valibot";
+import { generator } from "./gen.feedback";
 
 const Meta = v.object({
   type: v.optional(
@@ -36,14 +37,12 @@ export function ExerciseEditor() {
   const [selected, setSelected] = createSignal("math/factor");
   const meta = () => info.find((e) => e.name === selected());
   const submitExercise = action(async (name: string, form: FormData) => {
-    return json(
-      {
-        name,
-        question: Object.fromEntries(form.entries()),
-        attempt: [],
-      },
-      { revalidate: "nothing" },
-    );
+    const data = generator({
+      name,
+      question: Object.fromEntries(form.entries()),
+      attempt: [],
+    } as any);
+    return json(data, { revalidate: "nothing" });
   }, "hello");
   const submission = useSubmission(submitExercise);
   return (

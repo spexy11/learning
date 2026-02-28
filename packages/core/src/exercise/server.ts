@@ -158,7 +158,7 @@ function GeneratedExercise<const R extends SchemaRegistry>(
     [K in keyof R]: R[K] extends { schema: infer S extends Schema }
       ? v.ObjectSchema<
           ReturnType<typeof Exercise<S>>["entries"] & {
-            params: any;
+            params: v.OptionalSchema<typeof Params, undefined>;
           },
           undefined
         >
@@ -171,7 +171,7 @@ function GeneratedExercise<const R extends SchemaRegistry>(
     registry.map((m) =>
       v.object({
         ...Exercise(m.schema).entries,
-        params: Params,
+        params: v.optional(Params),
       }),
     ),
   ) as any;
