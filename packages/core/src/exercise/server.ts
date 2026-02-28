@@ -13,13 +13,17 @@ type Question<T extends Schema> = v.InferOutput<
   v.ObjectSchema<T["question"], undefined>
 >;
 
-type Module<T extends Schema, F extends Feedback<T>> = {
+type Module<
+  T extends Schema,
+  V extends (question: Question<T>) => Promise<Question<T>>,
+  F extends Feedback<T>,
+> = {
   schema: T;
-  transform?: (question: Question<T>) => Promise<Question<T>>;
+  transform?: V;
   feedback: F;
 };
 
-export type SchemaRegistry = Module<any, any>[];
+export type SchemaRegistry = Module<any, any, any>[];
 
 async function gradeExercise<T extends Schema, F extends Feedback<T>>(
   { feedback }: { schema: T; feedback: F },
@@ -48,7 +52,11 @@ function BaseExercise<const R extends SchemaRegistry>(
   registry: R,
 ): v.VariantSchema<
   "name",
-  ReturnType<typeof Exercise<R[number]["schema"]>>[],
+  {
+    [K in keyof R]: R[K] extends { schema: infer S extends Schema }
+      ? ReturnType<typeof Exercise<S>>
+      : never;
+  },
   undefined
 > {
   return v.variant(
@@ -121,33 +129,52 @@ export function createFeedbackFunction<const R extends SchemaRegistry>(
   };
 }
 
-function GeneratedExercise<const R extends SchemaRegistry>(registry: R) {
-  return v.intersect([
-    BaseExercise(registry),
-    v.object({
-      params: v.optional(
-        v.record(
-          v.string(),
-          v.union([
-            v.number(),
-            v.string(),
-            v.pipe(
-              v.tuple([
-                v.literal("sample"),
-                v.array(v.union([v.number(), v.string()])),
-                v.number(),
-              ]),
-              v.transform(([_, choices, size]) => sampleSize(choices, size)),
-            ),
-            v.pipe(
-              v.array(v.union([v.number(), v.string()])),
-              v.transform((choices) => String(sample(choices))),
-            ),
-          ]),
-        ),
-      ),
-    }),
-  ]);
+const Params = v.record(
+  v.string(),
+  v.union([
+    v.number(),
+    v.string(),
+    v.pipe(
+      v.tuple([
+        v.literal("sample"),
+        v.array(v.union([v.number(), v.string()])),
+        v.number(),
+      ]),
+      v.transform(([_, choices, size]) => sampleSize(choices, size)),
+    ),
+    v.pipe(
+      v.array(v.union([v.number(), v.string()])),
+      v.transform((choices) => String(sample(choices))),
+    ),
+  ]),
+);
+type Params = v.InferInput<typeof Params>;
+
+function GeneratedExercise<const R extends SchemaRegistry>(
+  registry: R,
+): v.VariantSchema<
+  "name",
+  {
+    [K in keyof R]: R[K] extends { schema: infer S extends Schema }
+      ? v.ObjectSchema<
+          ReturnType<typeof Exercise<S>>["entries"] & {
+            params: any;
+          },
+          undefined
+        >
+      : never;
+  },
+  undefined
+> {
+  return v.variant(
+    "name",
+    registry.map((m) =>
+      v.object({
+        ...Exercise(m.schema).entries,
+        params: Params,
+      }),
+    ),
+  ) as any;
 }
 type GeneratedExercise<R extends SchemaRegistry> = v.InferInput<
   ReturnType<typeof GeneratedExercise<R>>
@@ -162,15 +189,9 @@ export function createGenerator<const R extends SchemaRegistry>(registry: R) {
     function subs<T>(val: T): T {
       if (!params) return val;
       if (typeof val === "string") {
-        try {
-          Object.entries(params).forEach(([name, param]) => {
-            val = (val as string).replace(/`([a-z0-9\.]+)`/g, (_, path) =>
-              String(get(params, path)),
-            ) as T;
-          });
-        } catch (error) {
-          console.log(error);
-        }
+        val = (val as string).replace(/`([a-z0-9\.]+)`/g, (_, path) =>
+          String(get(params, path)),
+        ) as T;
       } else if (typeof val === "object" && val) {
         return mapValues(val, subs) as T;
       } else if (Array.isArray(val)) {
