@@ -4,10 +4,12 @@ export {
   Exercise,
   type Schema,
   type Feedback,
+  type Transform,
   type View,
 } from "./src/exercise/schemas";
 export {
   createFeedbackFunction,
+  createGenerator,
   createGradeFunction,
   GradedExercise,
   type SchemaRegistry,

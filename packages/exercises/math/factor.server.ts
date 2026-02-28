@@ -1,4 +1,10 @@
-import { expr, field, type Feedback, type Schema } from "@learning/core";
+import {
+  expr,
+  field,
+  type Feedback,
+  type Schema,
+  type Transform,
+} from "@learning/core";
 
 export const schema = {
   name: "math/factor",
@@ -19,6 +25,10 @@ export const schema = {
     root: { root: field("math") },
   },
 } as const satisfies Schema;
+
+export const transform: Transform<typeof schema> = async (question) => {
+  return { expr: await expr(question.expr).expand().latex() };
+};
 
 export const feedback = {
   start: async function* ({ question, state }) {

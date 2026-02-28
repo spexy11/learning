@@ -1,4 +1,4 @@
-import { mapAsync } from "es-toolkit";
+import { mapAsync, mapValues, sample, sampleSize } from "es-toolkit";
 import {
   Exercise,
   FeedbackInput,
@@ -7,9 +7,15 @@ import {
   type Schema,
 } from "./schemas";
 import * as v from "valibot";
+import { get } from "es-toolkit/compat";
+
+type Question<T extends Schema> = v.InferOutput<
+  v.ObjectSchema<T["question"], undefined>
+>;
 
 type Module<T extends Schema, F extends Feedback<T>> = {
   schema: T;
+  transform?: (question: Question<T>) => Promise<Question<T>>;
   feedback: F;
 };
 
@@ -112,5 +118,71 @@ export function createFeedbackFunction<const R extends SchemaRegistry>(
       const { done, value } = await gen.next();
       if (done) return value;
     }
+  };
+}
+
+function GeneratedExercise<const R extends SchemaRegistry>(registry: R) {
+  return v.intersect([
+    BaseExercise(registry),
+    v.object({
+      params: v.optional(
+        v.record(
+          v.string(),
+          v.union([
+            v.number(),
+            v.string(),
+            v.pipe(
+              v.tuple([
+                v.literal("sample"),
+                v.array(v.union([v.number(), v.string()])),
+                v.number(),
+              ]),
+              v.transform(([_, choices, size]) => sampleSize(choices, size)),
+            ),
+            v.pipe(
+              v.array(v.union([v.number(), v.string()])),
+              v.transform((choices) => String(sample(choices))),
+            ),
+          ]),
+        ),
+      ),
+    }),
+  ]);
+}
+type GeneratedExercise<R extends SchemaRegistry> = v.InferInput<
+  ReturnType<typeof GeneratedExercise<R>>
+>;
+
+export function createGenerator<const R extends SchemaRegistry>(registry: R) {
+  return async function (rawExerciseStub: GeneratedExercise<R>) {
+    let { params, question, ...exercise } = v.parse(
+      GeneratedExercise(registry),
+      rawExerciseStub,
+    );
+    function subs<T>(val: T): T {
+      if (!params) return val;
+      if (typeof val === "string") {
+        try {
+          Object.entries(params).forEach(([name, param]) => {
+            val = (val as string).replace(/`([a-z0-9\.]+)`/g, (_, path) =>
+              String(get(params, path)),
+            ) as T;
+          });
+        } catch (error) {
+          console.log(error);
+        }
+      } else if (typeof val === "object" && val) {
+        return mapValues(val, subs) as T;
+      } else if (Array.isArray(val)) {
+        return val.map(subs) as T;
+      }
+      return val;
+    }
+    question = subs(question);
+    const m = registry.find((m) => m.schema.name === exercise.name)!;
+    if (m.transform) {
+      question = (await m.transform(question)) as any;
+    }
+    return { question, ...exercise };
   };
 }

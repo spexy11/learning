@@ -21,6 +21,13 @@ export type Schema = {
   steps: Record<string, RawShape>;
 };
 
+type Question<T extends Schema> = v.InferOutput<
+  v.ObjectSchema<T["question"], undefined>
+>;
+export type Transform<T extends Schema> = (
+  question: Question<T>,
+) => Promise<Question<T>>;
+
 type PartSchema<
   T extends Schema,
   K extends keyof T["steps"] & string,

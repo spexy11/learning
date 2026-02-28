@@ -48,6 +48,7 @@ async function generateQueries() {
   const content = String.raw`
     import {
       createFeedbackFunction,
+      createGenerator,
       createGradeFunction,
       type SchemaRegistry as Registry,
     } from "@learning/core";
@@ -74,6 +75,12 @@ async function generateQueries() {
       "use server";
       return gradeFn(...args);
     }) as unknown as typeof gradeFn);
+
+    const generatorFn = createGenerator(feedbackRegistry);
+    export const generator = (async (input: any) => {
+      "use server";
+      return generatorFn(input);
+    }) as unknown as typeof generatorFn;
   `.replace(/^ {4}/gm, "");
   return await Bun.write("./gen.feedback.ts", content);
 }
