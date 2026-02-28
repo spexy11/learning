@@ -19,7 +19,6 @@ export default function Home() {
   );
   return (
     <main>
-      <pre>{JSON.stringify(generated(), null, 2)}</pre>
       <ExerciseEditor />
       <Spinner>
         <Show when={generated()}>

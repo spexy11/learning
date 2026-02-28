@@ -65,7 +65,7 @@ function BaseExercise<const R extends SchemaRegistry>(
   ) as any;
 }
 export type BaseExercise<R extends SchemaRegistry> = v.InferOutput<
-  ReturnType<typeof GradedExercise<R>>
+  ReturnType<typeof BaseExercise<R>>
 >;
 
 export function GradedExercise<const R extends SchemaRegistry>(registry: R) {
@@ -181,7 +181,9 @@ type GeneratedExercise<R extends SchemaRegistry> = v.InferInput<
 >;
 
 export function createGenerator<const R extends SchemaRegistry>(registry: R) {
-  return async function (rawExerciseStub: GeneratedExercise<R>) {
+  return async function (
+    rawExerciseStub: GeneratedExercise<R>,
+  ): Promise<BaseExercise<R>> {
     let { params, question, ...exercise } = v.parse(
       GeneratedExercise(registry),
       rawExerciseStub,
