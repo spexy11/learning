@@ -14,7 +14,7 @@ async function generateUI() {
     import { createExercise, loadView } from "@learning/core";
 
     const viewRegistry = {
-      ${files.map((path) => `"${path.replace(".view.tsx", "")}": loadView(() => import('./${path.replace(".tsx", "")}')),`).join("\n      ")}
+      ${files.map((path) => `"${path.replace("/view.tsx", "")}": loadView(() => import('./${path.replace(".tsx", "")}')),`).join("\n      ")}
     } as const
 
     const Exercise = createExercise<FeedbackRegistry, typeof viewRegistry>(
