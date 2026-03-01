@@ -18,13 +18,15 @@ const fields = {
   },
   get select() {
     return {
-      options: <const S extends string>(...values: S[]) => {
+      options: <const O extends Record<string, string>>(opts: O) => {
         return schema(
-          v.union(
-            values.map((s) => v.literal(s)) as readonly v.LiteralSchema<
-              S,
-              undefined
-            >[],
+          v.pipe(
+            v.union(
+              Object.keys(opts).map((s) =>
+                v.literal(s),
+              ) as readonly v.LiteralSchema<keyof O, undefined>[],
+            ),
+            v.metadata({ type: "select", options: opts }),
           ),
         );
       },

@@ -21,7 +21,12 @@ export const schema = {
         description: "Entrez votre réponse ici",
       }),
     },
-    binomial: { type: field("select").options("square", "conjugate") },
+    binomial: {
+      type: field("select").options({
+        square: "(a \\pm b)^2",
+        conjugate: "(a + b)(a - b)",
+      }),
+    },
     root: { root: field("math") },
   },
 } as const satisfies Schema;
