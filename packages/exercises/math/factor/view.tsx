@@ -20,7 +20,8 @@ export default {
     <>
       <p>
         L'expression {props.field.question.expr} est un{" "}
-        <strong>produit remarquable</strong>. De quel type?
+        <strong>produit remarquable</strong>. Quelle expression lui correspond
+        le plus ?
       </p>
       {props.field.state.type}
       <CheckMark correct={() => props.feedback()?.correct} />
@@ -29,8 +30,11 @@ export default {
   root: (props) => (
     <>
       <p>Trouvez une racine de {props.field.question.expr} :</p>
-      {props.field.state.root}
-      <CheckMark correct={() => props.feedback()?.correct} />
+      <div class="flex items-center justify-center">
+        <MathField value="=" readOnly />
+        {props.field.state.root}
+        <CheckMark correct={() => props.feedback()?.correct} />
+      </div>
     </>
   ),
 } as View<typeof import("./model")>;

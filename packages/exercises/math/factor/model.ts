@@ -23,7 +23,8 @@ export const schema = {
     },
     binomial: {
       type: field("select").options({
-        square: "(a \\pm b)^2",
+        squaredSum: "(a + b)^2",
+        squaredDiff: "(a - b)^2",
         conjugate: "(a + b)(a - b)",
       }),
     },
@@ -32,7 +33,7 @@ export const schema = {
 } as const satisfies Schema;
 
 export const transform: Transform<typeof schema> = async (question) => {
-  return { expr: await expr(question.expr).expand().latex() };
+  return { ...question, expr: await expr(question.expr).expand().latex() };
 };
 
 export const feedback = {
@@ -56,16 +57,22 @@ export const feedback = {
     };
   },
   binomial: async function* ({ question, state }) {
-    yield [0, 0];
+    let correct: boolean;
     const conjugate = await expr(question.expr).matches("(a + b)(a - b)");
-    const correct = (state.type === "conjugate") === conjugate;
+    const isSquare = await expr(question.expr).isSquare();
+    if (!conjugate && isSquare) {
+      const answer = await expr(question.expr).factor().latex();
+      const isSubtraction = expr(expr(answer).args[0]!).isSubtraction();
+      correct = (state.type === "squaredDiff") === isSubtraction;
+    } else {
+      correct = (state.type === "conjugate") === conjugate;
+    }
     yield correct ? "start" : null;
     return { correct };
   },
   root: async function* ({ question, state }) {
-    yield [0, 0];
     const correct = await expr(question.expr).checkRoot(state.root);
-    yield correct ? "start" : null;
+    yield correct ? "start" : "root";
     return { correct };
   },
 } satisfies Feedback<typeof schema>;
