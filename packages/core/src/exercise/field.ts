@@ -1,33 +1,44 @@
 import * as v from "valibot";
 
-function schema<T extends v.BaseSchema<any, any, any>>(s: T) {
+const defaultMeta = {
+  type: "input",
+  label: "",
+  description: "",
+};
+
+const BaseField = <
+  const S extends v.BaseSchema<any, any, any>,
+  const O extends Record<string, any>,
+>(
+  schema: S,
+  metaOverride: O,
+) => {
   return {
-    ...s,
-    meta: (data: { label: string; description: string }) => {
-      return v.pipe(s, v.title(data.label), v.description(data.description));
+    ...v.pipe(schema, v.metadata({ ...defaultMeta, ...metaOverride })),
+    meta(rawInfo: Partial<typeof defaultMeta & O>) {
+      return v.pipe(
+        schema,
+        v.title(rawInfo.label ?? ""),
+        v.description(rawInfo.description ?? ""),
+        v.metadata({ ...defaultMeta, ...metaOverride, ...rawInfo }),
+      );
     },
   };
-}
+};
 
 const fields = {
-  get markdown() {
-    return schema(v.pipe(v.string(), v.metadata({ type: "markdown" })));
-  },
-  get math() {
-    return schema(v.pipe(v.string(), v.metadata({ type: "latex" })));
-  },
+  markdown: BaseField(v.string(), { type: "markdown" as const }),
+  math: BaseField(v.string(), { type: "latex" as const }),
   get select() {
     return {
       options: <const O extends Record<string, string>>(opts: O) => {
-        return schema(
-          v.pipe(
-            v.union(
-              Object.keys(opts).map((s) =>
-                v.literal(s),
-              ) as readonly v.LiteralSchema<keyof O, undefined>[],
-            ),
-            v.metadata({ type: "select", options: opts }),
+        return BaseField(
+          v.union(
+            Object.keys(opts).map((s) => v.literal(s)) as {
+              [K in keyof O]: v.LiteralSchema<K, undefined>;
+            }[keyof O][],
           ),
+          { type: "select" as const, options: opts },
         );
       },
     };
