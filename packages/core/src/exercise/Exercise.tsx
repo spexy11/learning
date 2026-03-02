@@ -15,7 +15,7 @@ import type {
   BaseExercise,
   createFeedbackFunction,
   GradedExercise,
-  SchemaRegistry,
+  ModelRegistry,
 } from "./server";
 import {
   createAsync,
@@ -45,10 +45,7 @@ export function loadView<T extends View<any>>(
 
 type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 
-export function createExercise<
-  S extends SchemaRegistry,
-  V extends ViewRegistry,
->(
+export function createExercise<S extends ModelRegistry, V extends ViewRegistry>(
   viewRegistry: V,
   schema: v.VariantSchema<"name", ReturnType<typeof Exercise>[], undefined>,
   grade: Action<[BaseExercise<S>, string, FormData], GradedExercise<S>>,
