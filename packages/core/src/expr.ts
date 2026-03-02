@@ -22,6 +22,10 @@ export function expr(input: MathJson) {
   return {
     json,
     abs: () => expr(["Abs", json]),
+    checkRoot: (root: MathJson, x = "x") =>
+      expr(json)
+        .subs({ [x]: root })
+        .isEqual(0),
     commonRoots: (expr: MathJson) =>
       symapi.expr.commonRoots({ expr1: json, expr2: getMathJson(expr) }),
     diff: (x = "x") => expr(["Derivative", json, x]),
@@ -36,5 +40,7 @@ export function expr(input: MathJson) {
     matches: (expr: MathJson) =>
       symapi.expr.match({ expr1: json, expr2: getMathJson(expr) }),
     roots: () => symapi.expr.roots({ expr: json }),
+    subs: (substitutions: Record<string, MathJson>) =>
+      expr(ce.box(json).subs(substitutions).json),
   };
 }

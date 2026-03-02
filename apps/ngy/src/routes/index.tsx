@@ -9,7 +9,7 @@ export default function Home() {
     generator({
       name: "math/factor",
       params: {
-        roots: ["sample", [0, 1, 2, 3, 4], 2],
+        roots: ["sample", [-2, -3], 2],
       },
       question: {
         expr: "(x - `roots.0`)(x - `roots.1`)",

@@ -1,4 +1,4 @@
-import { lazy, splitProps, type JSX } from "solid-js";
+import { For, lazy, Show, splitProps, type JSX } from "solid-js";
 import { Dynamic } from "solid-js/web";
 
 const components = {
@@ -15,6 +15,7 @@ type Props = Omit<JSX.InputHTMLAttributes<HTMLInputElement>, "type"> & {
   chlidren?: JSX.Element;
   label?: string;
   hideLabel?: boolean;
+  options?: Record<string, string>;
 };
 
 export default function Field(props: Props) {
@@ -37,7 +38,11 @@ export default function Field(props: Props) {
         placeholder={props.title}
         {...attrs}
       >
-        {props.children}
+        <Show when={props.options} fallback={props.children}>
+          <For each={[...Object.entries(props.options ?? {})]}>
+            {([name, value]) => <option value={name}>{value}</option>}
+          </For>
+        </Show>
       </Dynamic>
     </label>
   );

@@ -62,7 +62,10 @@ export const feedback = {
     yield correct ? "start" : null;
     return { correct };
   },
-  root: async function* () {
+  root: async function* ({ question, state }) {
     yield [0, 0];
+    const correct = await expr(question.expr).checkRoot(state.root);
+    yield correct ? "start" : null;
+    return { correct };
   },
 } satisfies Feedback<typeof schema>;

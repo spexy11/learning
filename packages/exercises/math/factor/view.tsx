@@ -20,35 +20,17 @@ export default {
     <>
       <p>
         L'expression {props.field.question.expr} est un{" "}
-        <strong>produit remarquable</strong>.
+        <strong>produit remarquable</strong>. De quel type?
       </p>
-      <div class="flex items-center justify-center gap-8">
-        <label>
-          <input
-            type="radio"
-            name="type"
-            value="square"
-            checked={props.state?.type === "square"}
-          />
-          <MathField value={`(a \\pm b)^2`} readOnly />
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="type"
-            value="conjugate"
-            checked={props.state?.type === "conjugate"}
-          />
-          <MathField value={`(a + b)(a - b)`} readOnly />
-        </label>
-        <CheckMark correct={() => props.feedback()?.correct} />
-      </div>
+      {props.field.state.type}
+      <CheckMark correct={() => props.feedback()?.correct} />
     </>
   ),
   root: (props) => (
     <>
       <p>Trouvez une racine de {props.field.question.expr} :</p>
-      <MathField value={props.state?.root} />
+      {props.field.state.root}
+      <CheckMark correct={() => props.feedback()?.correct} />
     </>
   ),
 } as View<typeof import("./model")>;
