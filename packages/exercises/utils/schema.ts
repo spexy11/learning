@@ -1,7 +1,7 @@
-import { type Schema } from "./types";
-import z from "zod/v4";
-import registry from "./registry";
-import { memoize } from "es-toolkit";
+import { type Schema } from './types'
+import z from 'zod/v4'
+import registry from './registry'
+import { memoize } from 'es-toolkit'
 
 export function buildSchema<const T extends Schema>(schema: T) {
   const part = z.union(
@@ -11,30 +11,30 @@ export function buildSchema<const T extends Schema>(schema: T) {
         state: z.object(state),
       }),
     ) as {
-      [K in keyof T["steps"]]: z.ZodObject<{
-        step: z.ZodLiteral<K & string>;
-        state: z.ZodObject<T["steps"][K]>;
-      }>;
-    }[keyof T["steps"]][],
-  );
+      [K in keyof T['steps']]: z.ZodObject<{
+        step: z.ZodLiteral<K & string>
+        state: z.ZodObject<T['steps'][K]>
+      }>
+    }[keyof T['steps']][],
+  )
   return z.object({
-    name: z.literal(schema.name as T["name"]),
-    question: z.object(schema.question as T["question"]),
+    name: z.literal(schema.name as T['name']),
+    question: z.object(schema.question as T['question']),
     attempt: z.tuple([part], part),
-  });
+  })
 }
 
 export const getSchema = memoize(
-  async <N extends keyof (typeof registry)["server"]>(
+  async <N extends keyof (typeof registry)['server']>(
     name: N,
   ): Promise<
-    (typeof registry)["server"][N] extends () => Promise<{
-      schema: infer T extends Schema;
+    (typeof registry)['server'][N] extends () => Promise<{
+      schema: infer T extends Schema
     }>
       ? ReturnType<typeof buildSchema<T>>
       : never
   > => {
-    const module = await registry.server[name]();
-    return buildSchema(module.schema) as any;
+    const module = await registry.server[name]()
+    return buildSchema(module.schema) as any
   },
-);
+)

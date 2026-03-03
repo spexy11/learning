@@ -1,10 +1,7 @@
-import { type JSX, Suspense } from "solid-js";
-import spinner from "./Spinner.svg";
+import { type JSX, Suspense } from 'solid-js'
+import spinner from './Spinner.svg'
 
-export default function Spinner(props: {
-  fallback?: JSX.Element;
-  children: JSX.Element;
-}) {
+export default function Spinner(props: { fallback?: JSX.Element; children: JSX.Element }) {
   return (
     <Suspense
       fallback={
@@ -15,5 +12,5 @@ export default function Spinner(props: {
     >
       {props.children}
     </Suspense>
-  );
+  )
 }

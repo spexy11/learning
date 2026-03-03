@@ -3,7 +3,7 @@
   "ui": "tui",
   "tasks": {
     "codegen": {
-      "cache": false,
+      "cache": false
     },
     "dev": {
       "cache": false,

@@ -1,9 +1,9 @@
-import { Show } from "solid-js";
-import Spinner from "./Spinner";
+import { Show } from 'solid-js'
+import Spinner from './Spinner'
 
 type Props = {
-  correct: () => boolean | undefined;
-};
+  correct: () => boolean | undefined
+}
 export default function CheckMark(props: Props) {
   return (
     <Spinner>
@@ -14,5 +14,5 @@ export default function CheckMark(props: Props) {
         <span class="text-red-900">❌</span>
       </Show>
     </Spinner>
-  );
+  )
 }

@@ -1,20 +1,20 @@
-import { Glob } from "bun";
-import { watch } from "fs/promises";
+import { Glob } from 'bun'
+import { watch } from 'fs/promises'
 
 async function glob(pattern: string) {
-  const glob = new Glob(pattern);
-  return await Array.fromAsync(glob.scan("."));
+  const glob = new Glob(pattern)
+  return await Array.fromAsync(glob.scan('.'))
 }
 
 async function generateUI() {
-  const files = await glob("**/view.tsx");
+  const files = await glob('**/view.tsx')
   const content = String.raw`
     import { grade, type FeedbackRegistry, feedback } from "./gen.feedback";
     import schema from "./gen.schema";
     import { createExercise, loadView } from "@learning/core";
 
     const viewRegistry = {
-      ${files.map((path) => `"${path.replace("/view.tsx", "")}": loadView(() => import('./${path.replace(".tsx", "")}')),`).join("\n      ")}
+      ${files.map((path) => `"${path.replace('/view.tsx', '')}": loadView(() => import('./${path.replace('.tsx', '')}')),`).join('\n      ')}
     } as const
 
     const Exercise = createExercise<FeedbackRegistry, typeof viewRegistry>(
@@ -24,27 +24,27 @@ async function generateUI() {
       feedback,
     );
     export default Exercise
-  `.replace(/^ {4}/gm, "");
-  await Bun.write("./gen.view.ts", content);
+  `.replace(/^ {4}/gm, '')
+  await Bun.write('./gen.view.ts', content)
 }
 
 async function generateSchema() {
-  const files = (await glob("**/model.ts")).filter((p) => p.includes("/"));
+  const files = (await glob('**/model.ts')).filter((p) => p.includes('/'))
   const content = String.raw`
     import * as v from "valibot";
     import { Exercise } from "@learning/core";
-    ${files.map((path, i) => `import { schema as rawSchema${i} } from "./${path}"`).join("\n")}
+    ${files.map((path, i) => `import { schema as rawSchema${i} } from "./${path}"`).join('\n')}
 
     const schema = v.variant("name", [
-      ${files.map((path, i) => `Exercise(rawSchema${i}),`).join("\n      ")}
+      ${files.map((path, i) => `Exercise(rawSchema${i}),`).join('\n      ')}
     ])
     export default schema;
-  `.replace(/^ {4}/gm, "");
-  return await Bun.write("./gen.schema.ts", content);
+  `.replace(/^ {4}/gm, '')
+  return await Bun.write('./gen.schema.ts', content)
 }
 
 async function generateQueries() {
-  const files = (await glob("**/model.ts")).filter((p) => p.includes("/"));
+  const files = (await glob('**/model.ts')).filter((p) => p.includes('/'))
   const content = String.raw`
     import {
       createFeedbackFunction,
@@ -54,10 +54,10 @@ async function generateQueries() {
     } from "@learning/core";
     import { action, query } from "@solidjs/router";
 
-    ${files.map((path, i) => `import * as feedback${i} from "./${path}"`).join("\n")}
+    ${files.map((path, i) => `import * as feedback${i} from "./${path}"`).join('\n')}
 
     const feedbackRegistry = [
-      ${files.map((path, i) => `feedback${i},`).join("\n      ")}
+      ${files.map((path, i) => `feedback${i},`).join('\n      ')}
     ] as const satisfies Registry
     export type FeedbackRegistry = typeof feedbackRegistry;
 
@@ -81,17 +81,17 @@ async function generateQueries() {
       "use server";
       return generatorFn(input);
     }) as unknown as typeof generatorFn;
-  `.replace(/^ {4}/gm, "");
-  return await Bun.write("./gen.feedback.ts", content);
+  `.replace(/^ {4}/gm, '')
+  return await Bun.write('./gen.feedback.ts', content)
 }
 
 async function runAll() {
-  return await Promise.all([generateUI(), generateSchema(), generateQueries()]);
+  return await Promise.all([generateUI(), generateSchema(), generateQueries()])
 }
 
-const watcher = watch(".");
-await runAll();
+const watcher = watch('.')
+await runAll()
 for await (const event of watcher) {
-  console.log(`Detected ${event.eventType} in ${event.filename}`);
-  await runAll();
+  console.log(`Detected ${event.eventType} in ${event.filename}`)
+  await runAll()
 }

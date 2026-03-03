@@ -1,151 +1,131 @@
-import type { Field } from "@learning/components";
-import type { Component, ComponentProps } from "solid-js";
-import * as v from "valibot";
+import type { Field } from '@learning/components'
+import type { Component, ComponentProps } from 'solid-js'
+import * as v from 'valibot'
 
 type Infer<
-  F extends (
-    ...args: any[]
-  ) => v.BaseSchema<any, any, any> | v.BaseSchemaAsync<any, any, any>,
-  T extends "input" | "output" = "output",
-> = T extends "output"
+  F extends (...args: any[]) => v.BaseSchema<any, any, any> | v.BaseSchemaAsync<any, any, any>,
+  T extends 'input' | 'output' = 'output',
+> = T extends 'output'
   ? v.InferOutput<ReturnType<F>>
-  : T extends "input"
+  : T extends 'input'
     ? v.InferInput<ReturnType<F>>
-    : never;
+    : never
 
-type RawShape = Record<string, v.BaseSchema<any, any, any>>;
+type RawShape = Record<string, v.BaseSchema<any, any, any>>
 
 export type Schema = {
-  name: string;
-  question: RawShape;
-  steps: Record<string, RawShape>;
-};
+  name: string
+  question: RawShape
+  steps: Record<string, RawShape>
+}
 
-type Question<T extends Schema> = v.InferOutput<
-  v.ObjectSchema<T["question"], undefined>
->;
-export type Transform<T extends Schema> = (
-  question: Question<T>,
-) => Promise<Question<T>>;
+type Question<T extends Schema> = v.InferOutput<v.ObjectSchema<T['question'], undefined>>
+export type Transform<T extends Schema> = (question: Question<T>) => Promise<Question<T>>
 
-type PartSchema<
-  T extends Schema,
-  K extends keyof T["steps"] & string,
-> = v.ObjectSchema<
+type PartSchema<T extends Schema, K extends keyof T['steps'] & string> = v.ObjectSchema<
   {
-    step: v.LiteralSchema<K, undefined>;
-    state: v.ObjectSchema<T["steps"][K], undefined>;
+    step: v.LiteralSchema<K, undefined>
+    state: v.ObjectSchema<T['steps'][K], undefined>
   },
   undefined
->;
+>
 
-export function Part<
-  const T extends Schema,
-  const K extends keyof T["steps"] & string,
->(schema: T, step: K): PartSchema<T, K>;
-export function Part<
-  const T extends Schema,
-  const K extends keyof T["steps"] & string,
->(
+export function Part<const T extends Schema, const K extends keyof T['steps'] & string>(
+  schema: T,
+  step: K,
+): PartSchema<T, K>
+export function Part<const T extends Schema, const K extends keyof T['steps'] & string>(
   schema: T,
   step?: K[],
-): v.UnionSchema<
-  { [S in keyof T["steps"] & string]: PartSchema<T, S> }[K][],
-  undefined
->;
-export function Part<
-  const T extends Schema,
-  const K extends keyof T["steps"] & string,
->(schema: T, steps?: K | K[]) {
-  if (typeof steps === "string") {
+): v.UnionSchema<{ [S in keyof T['steps'] & string]: PartSchema<T, S> }[K][], undefined>
+export function Part<const T extends Schema, const K extends keyof T['steps'] & string>(
+  schema: T,
+  steps?: K | K[],
+) {
+  if (typeof steps === 'string') {
     return v.object({
       step: v.literal(steps as K),
-      state: v.object((schema.steps as T["steps"])[steps as K]!),
-    });
+      state: v.object((schema.steps as T['steps'])[steps as K]!),
+    })
   }
   return v.union(
     Object.keys(schema.steps)
       .filter((step) => steps?.includes(step as K) ?? true)
       .map((step) => Part(schema, step)) as {
-      [K in keyof T["steps"]]: v.ObjectSchema<
+      [K in keyof T['steps']]: v.ObjectSchema<
         {
-          step: v.LiteralSchema<K, undefined>;
-          state: v.ObjectSchema<T["steps"][K], undefined>;
+          step: v.LiteralSchema<K, undefined>
+          state: v.ObjectSchema<T['steps'][K], undefined>
         },
         undefined
-      >;
+      >
     }[K][],
-  );
+  )
 }
 export type Part<
   T extends Schema,
-  K extends keyof T["steps"] & string = keyof T["steps"] & string,
-> = Infer<typeof Part<T, K>>;
+  K extends keyof T['steps'] & string = keyof T['steps'] & string,
+> = Infer<typeof Part<T, K>>
 
 export function Exercise<const T extends Schema>(schema: T) {
   return v.object({
-    name: v.literal(schema.name as T["name"]),
-    question: v.object(schema.question as T["question"]),
+    name: v.literal(schema.name as T['name']),
+    question: v.object(schema.question as T['question']),
     attempt: v.array(Part(schema)),
-  });
+  })
 }
-export type Exercise<T extends Schema> = Infer<typeof Exercise<T>>;
+export type Exercise<T extends Schema> = Infer<typeof Exercise<T>>
 
-export function FeedbackInput<
-  const T extends Schema,
-  const K extends keyof T["steps"] & string,
->(schema: T, step: K) {
+export function FeedbackInput<const T extends Schema, const K extends keyof T['steps'] & string>(
+  schema: T,
+  step: K,
+) {
   return v.object({
     ...Part(schema, step).entries,
     ...Exercise(schema).entries,
-  });
+  })
 }
-export type FeedbackInput<
-  T extends Schema,
-  K extends keyof T["steps"] & string,
-> = Infer<typeof FeedbackInput<T, K>>;
+export type FeedbackInput<T extends Schema, K extends keyof T['steps'] & string> = Infer<
+  typeof FeedbackInput<T, K>
+>
 
 export type Feedback<
   T extends Schema,
-  S extends (keyof T["steps"] & string) | null = null,
+  S extends (keyof T['steps'] & string) | null = null,
 > = S extends string
-  ? (
-      exercise: FeedbackInput<T, S>,
-    ) => AsyncGenerator<[number, number] | keyof T["steps"] | null>
-  : { [K in keyof T["steps"] & string]: Feedback<T, K> };
+  ? (exercise: FeedbackInput<T, S>) => AsyncGenerator<[number, number] | keyof T['steps'] | null>
+  : { [K in keyof T['steps'] & string]: Feedback<T, K> }
 
 export type FeedbackReturn<
   T extends Schema,
   F extends Feedback<T>,
-  K extends keyof T["steps"] & string,
-> = Promise<ReturnType<F[K]> extends AsyncGenerator<any, infer R> ? R : never>;
+  K extends keyof T['steps'] & string,
+> = Promise<ReturnType<F[K]> extends AsyncGenerator<any, infer R> ? R : never>
 
-type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
+type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>
 
 export type Props<
   T extends Schema,
   F extends Feedback<T>,
-  K extends keyof T["steps"] & string = keyof T["steps"] & string,
+  K extends keyof T['steps'] & string = keyof T['steps'] & string,
 > = Optional<
   FeedbackInput<T, K> & {
-    feedback: () => Awaited<FeedbackReturn<T, F, K> | undefined>;
+    feedback: () => Awaited<FeedbackReturn<T, F, K> | undefined>
     field: {
-      question: Record<keyof T["question"], Component>;
-      state: Record<keyof T["steps"][K], Component>;
-    };
+      question: Record<keyof T['question'], Component>
+      state: Record<keyof T['steps'][K], Component>
+    }
   },
-  "attempt" | "state"
->;
+  'attempt' | 'state'
+>
 
-type Module = { schema: Schema; feedback: any };
+type Module = { schema: Schema; feedback: any }
 
 export type View<
   T extends Module,
-  S extends (keyof T["schema"]["steps"] & string) | null = null,
+  S extends (keyof T['schema']['steps'] & string) | null = null,
 > = S extends string
-  ? Component<Props<T["schema"], T["feedback"], S>>
+  ? Component<Props<T['schema'], T['feedback'], S>>
   : {
-      [K in keyof T["schema"]["steps"] & string]: Component<
-        Props<T["schema"], T["feedback"], K>
-      >;
-    };
+      [K in keyof T['schema']['steps'] & string]: Component<Props<T['schema'], T['feedback'], K>>
+    }

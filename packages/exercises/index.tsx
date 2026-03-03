@@ -1,69 +1,60 @@
-import { action, json, useSubmission } from "@solidjs/router";
-import { createSignal, For, Show } from "solid-js";
-import { Button, Field } from "@learning/components";
-import Exercise from "./gen.view";
-import BaseExercise from "./gen.schema";
-import * as v from "valibot";
-import { generator } from "./gen.feedback";
+import { action, json, useSubmission } from '@solidjs/router'
+import { createSignal, For, Show } from 'solid-js'
+import { Button, Field } from '@learning/components'
+import Exercise from './gen.view'
+import BaseExercise from './gen.schema'
+import * as v from 'valibot'
+import { generator } from './gen.feedback'
 
 const Meta = v.object({
   type: v.optional(
-    v.union([
-      v.literal("textarea"),
-      v.literal("input"),
-      v.literal("latex"),
-      v.literal("markdown"),
-    ]),
-    "input",
+    v.union([v.literal('textarea'), v.literal('input'), v.literal('latex'), v.literal('markdown')]),
+    'input',
   ),
-});
+})
 
 const info = BaseExercise.options.map((s) => ({
   name: s.entries.name.literal,
-  question: Object.entries(s.entries.question.entries).map(
-    ([name, value]: [string, any]) => {
-      return {
-        name,
-        ...v.parse(Meta, v.getMetadata(value)),
-        title: v.getTitle(value),
-        description: v.getDescription(value),
-        examples: v.getExamples(value),
-      };
-    },
-  ),
-}));
+  question: Object.entries(s.entries.question.entries).map(([name, value]: [string, any]) => {
+    return {
+      name,
+      ...v.parse(Meta, v.getMetadata(value)),
+      title: v.getTitle(value),
+      description: v.getDescription(value),
+      examples: v.getExamples(value),
+    }
+  }),
+}))
 
 export function ExerciseEditor() {
-  const [selected, setSelected] = createSignal("math/factor");
-  const meta = () => info.find((e) => e.name === selected());
+  const [selected, setSelected] = createSignal('math/factor')
+  const meta = () => info.find((e) => e.name === selected())
   const submitExercise = action(async (name: string, form: FormData) => {
     const data = generator({
       name,
       question: Object.fromEntries(form.entries()),
       attempt: [],
-    } as any);
-    return json(data, { revalidate: "nothing" });
-  }, "hello");
-  const submission = useSubmission(submitExercise);
+    } as any)
+    return json(data, { revalidate: 'nothing' })
+  }, 'hello')
+  const submission = useSubmission(submitExercise)
   return (
     <>
       <form
         class="bg-slate-100 container mx-auto p-4 rounded-xl"
         method="post"
-        action={submitExercise.with(selected() ?? "")}
+        action={submitExercise.with(selected() ?? '')}
       >
         <Field
           type="select"
           label="Exercice"
           value={selected()}
           onChange={(e) => {
-            setSelected(e.target.value);
+            setSelected(e.target.value)
           }}
         >
           <For each={info}>
-            {(exercise) => (
-              <option value={exercise.name}>{exercise.name}</option>
-            )}
+            {(exercise) => <option value={exercise.name}>{exercise.name}</option>}
           </For>
         </Field>
         <fieldset>
@@ -87,7 +78,7 @@ export function ExerciseEditor() {
         <Exercise {...(submission.result as any)} />
       </Show>
     </>
-  );
+  )
 }
 
-export default Exercise;
+export default Exercise
