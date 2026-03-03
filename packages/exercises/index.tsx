@@ -1,10 +1,10 @@
+import { Button, Field } from '@learning/components'
 import { action, json, useSubmission } from '@solidjs/router'
 import { createSignal, For, Show } from 'solid-js'
-import { Button, Field } from '@learning/components'
-import Exercise from './gen.view'
-import BaseExercise from './gen.schema'
 import * as v from 'valibot'
 import { generator } from './gen.feedback'
+import BaseExercise from './gen.schema'
+import Exercise from './gen.view'
 
 const Meta = v.object({
   type: v.optional(

@@ -1,8 +1,8 @@
 import { query } from '@solidjs/router'
+import { mapAsync, memoize } from 'es-toolkit'
 import registry from './registry'
 import { buildSchema } from './schema'
 import type { Exercise, ExerciseTemplate, Feedback, FeedbackReturn, Part, Schema } from './types'
-import { mapAsync, memoize } from 'es-toolkit'
 
 async function extractFeedback<
   T extends Schema,

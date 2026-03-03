@@ -1,6 +1,6 @@
 import 'mathlive'
-import 'mathlive/fonts.css'
 import type { MathfieldElement, MathfieldElementAttributes } from 'mathlive'
+import 'mathlive/fonts.css'
 import { createEffect, createSignal, Show, splitProps } from 'solid-js'
 
 declare module 'solid-js' {

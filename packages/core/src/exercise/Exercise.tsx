@@ -1,3 +1,6 @@
+import { Button, Field } from '@learning/components'
+import { createAsync, query, useSubmission, type Action } from '@solidjs/router'
+import { isEqual, mapValues } from 'es-toolkit'
 import {
   createEffect,
   For,
@@ -8,14 +11,11 @@ import {
   type ComponentProps,
   type JSX,
 } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
-import type { Exercise, View } from './schemas'
 import { createStore } from 'solid-js/store'
-import type { BaseExercise, createFeedbackFunction, GradedExercise, ModelRegistry } from './server'
-import { createAsync, query, useSubmission, type Action } from '@solidjs/router'
-import { Button, Field } from '@learning/components'
+import { Dynamic } from 'solid-js/web'
 import * as v from 'valibot'
-import { isEqual, mapValues } from 'es-toolkit'
+import type { Exercise, View } from './schemas'
+import type { BaseExercise, createFeedbackFunction, GradedExercise, ModelRegistry } from './server'
 
 export type ViewRegistry = Record<string, Component<any>>
 type Props<T extends View<any>> = ComponentProps<T[keyof T]>

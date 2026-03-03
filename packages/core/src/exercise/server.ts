@@ -1,7 +1,7 @@
 import { mapAsync, mapValues, sample, sampleSize } from 'es-toolkit'
-import { Exercise, FeedbackInput, type Feedback, type FeedbackReturn, type Schema } from './schemas'
-import * as v from 'valibot'
 import { get } from 'es-toolkit/compat'
+import * as v from 'valibot'
+import { Exercise, FeedbackInput, type Feedback, type FeedbackReturn, type Schema } from './schemas'
 
 type Question<T extends Schema> = v.InferOutput<v.ObjectSchema<T['question'], undefined>>
 

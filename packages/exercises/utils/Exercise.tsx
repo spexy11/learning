@@ -1,12 +1,12 @@
+import { Button } from '@learning/components'
+import { action, createAsyncStore, useSubmission } from '@solidjs/router'
+import { createEffect, For, lazy, Show, Suspense, type Component, type JSX } from 'solid-js'
+import { createStore } from 'solid-js/store'
 import { Dynamic } from 'solid-js/web'
 import { getFullFeedback, gradeExercise, type Module } from './queries'
 import registry from './registry'
-import type { Exercise, ExerciseTemplate, Part, View } from './types'
-import { createEffect, For, type JSX, lazy, Show, Suspense, type Component } from 'solid-js'
-import { createStore } from 'solid-js/store'
-import { action, createAsyncStore, useSubmission } from '@solidjs/router'
 import { getSchema } from './schema'
-import { Button } from '@learning/components'
+import type { Exercise, ExerciseTemplate, Part, View } from './types'
 
 type ModuleNames = keyof (typeof registry)['views']
 

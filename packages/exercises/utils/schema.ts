@@ -1,7 +1,7 @@
-import { type Schema } from './types'
+import { memoize } from 'es-toolkit'
 import z from 'zod/v4'
 import registry from './registry'
-import { memoize } from 'es-toolkit'
+import { type Schema } from './types'
 
 export function buildSchema<const T extends Schema>(schema: T) {
   const part = z.union(

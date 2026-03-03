@@ -1,5 +1,4 @@
-import type { Field } from '@learning/components'
-import type { Component, ComponentProps } from 'solid-js'
+import type { Component } from 'solid-js'
 import * as v from 'valibot'
 
 type Infer<

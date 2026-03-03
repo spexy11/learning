@@ -1,8 +1,8 @@
+import { Spinner } from '@learning/components'
 import Exercise, { ExerciseEditor } from '@learning/exercises'
 import { generator } from '@learning/exercises/gen.feedback'
 import { createAsync } from '@solidjs/router'
 import { Show } from 'solid-js'
-import { Spinner } from '@learning/components'
 
 export default function Home() {
   const generated = createAsync(async () =>

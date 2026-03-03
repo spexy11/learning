@@ -1,4 +1,4 @@
-import { CheckMark, Field, MathField } from '@learning/components'
+import { CheckMark, MathField } from '@learning/components'
 import type { View } from '@learning/core'
 
 export default {

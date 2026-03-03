@@ -1,18 +1,18 @@
-export { expr } from './src/expr'
+export { createExercise, loadView, type ViewRegistry } from './src/exercise/Exercise'
 export { field } from './src/exercise/field'
 export {
   Exercise,
-  type Schema,
   type Feedback,
+  type Schema,
   type Transform,
   type View,
 } from './src/exercise/schemas'
 export {
+  GradedExercise,
   createFeedbackFunction,
   createGenerator,
   createGradeFunction,
-  GradedExercise,
   type ModelRegistry,
   type ServerModule,
 } from './src/exercise/server'
-export { createExercise, loadView, type ViewRegistry } from './src/exercise/Exercise'
+export { expr } from './src/expr'

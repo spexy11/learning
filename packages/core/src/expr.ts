@@ -1,7 +1,7 @@
 import z from 'zod/v4'
 
-import { ComputeEngine } from '@cortex-js/compute-engine'
 import type { Expression as MathJson } from '@cortex-js/compute-engine'
+import { ComputeEngine } from '@cortex-js/compute-engine'
 import symapi from './symapi'
 
 const ce = new ComputeEngine()
