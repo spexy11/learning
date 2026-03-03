@@ -105,11 +105,14 @@ export type FeedbackInput<
   K extends keyof T["steps"] & string,
 > = Infer<typeof FeedbackInput<T, K>>;
 
-export type Feedback<T extends Schema> = {
-  [K in keyof T["steps"] & string]: (
-    exercise: FeedbackInput<T, K>,
-  ) => AsyncGenerator<[number, number] | keyof T["steps"] | null>;
-};
+export type Feedback<
+  T extends Schema,
+  S extends (keyof T["steps"] & string) | null = null,
+> = S extends string
+  ? (
+      exercise: FeedbackInput<T, S>,
+    ) => AsyncGenerator<[number, number] | keyof T["steps"] | null>
+  : { [K in keyof T["steps"] & string]: Feedback<T, K> };
 
 export type FeedbackReturn<
   T extends Schema,
@@ -136,8 +139,13 @@ export type Props<
 
 type Module = { schema: Schema; feedback: any };
 
-export type View<T extends Module> = {
-  [K in keyof T["schema"]["steps"] & string]: Component<
-    Props<T["schema"], T["feedback"], K>
-  >;
-};
+export type View<
+  T extends Module,
+  S extends (keyof T["schema"]["steps"] & string) | null = null,
+> = S extends string
+  ? Component<Props<T["schema"], T["feedback"], S>>
+  : {
+      [K in keyof T["schema"]["steps"] & string]: Component<
+        Props<T["schema"], T["feedback"], K>
+      >;
+    };
