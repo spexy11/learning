@@ -41,7 +41,7 @@ export function ExerciseEditor() {
   return (
     <>
       <form
-        class="bg-slate-100 container mx-auto p-4 rounded-xl"
+        class="container mx-auto rounded-xl bg-slate-100 p-4"
         method="post"
         action={submitExercise.with(selected() ?? '')}
       >

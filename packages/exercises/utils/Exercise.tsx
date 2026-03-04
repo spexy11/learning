@@ -96,7 +96,7 @@ function Step(props: {
 }) {
   return (
     <fieldset
-      class="container rounded-xl my-4 mx-auto p-4 shadow-sm"
+      class="container mx-auto my-4 rounded-xl p-4 shadow-sm"
       classList={{
         'bg-blue-50 hover:bg-blue-100': !props.disabled,
         'bg-white hover:bg-slate-50': props.disabled === true,
@@ -104,7 +104,7 @@ function Step(props: {
       disabled={props.disabled === true}
     >
       <div class="flex justify-between">
-        <h3 class="text-sky-900 text-xl font-bold mb-3">Étape {props.index}</h3>
+        <h3 class="mb-3 text-xl font-bold text-sky-900">Étape {props.index}</h3>
         <Show when={props.grade?.[1] ?? 0 > 0}>
           <h4>{props.grade?.join('/')}</h4>
         </Show>
