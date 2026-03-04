@@ -4,7 +4,6 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   extensions: ['mdx'],
-  routeDir: '../../../content/ngy',
   vite: {
     plugins: [mdxPlugin(), tailwindcss()],
   },
