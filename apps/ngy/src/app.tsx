@@ -1,3 +1,4 @@
+import { ComponentProvider } from '@learning/mdx/components'
 import { Router } from '@solidjs/router'
 import { FileRoutes } from '@solidjs/start/router'
 import { Suspense } from 'solid-js'
@@ -8,7 +9,9 @@ export default function App() {
     <Router
       root={(props) => (
         <main class="prose prose-code:before:content-none prose-code:after:content-none mx-auto">
-          <Suspense>{props.children}</Suspense>
+          <ComponentProvider>
+            <Suspense>{props.children}</Suspense>
+          </ComponentProvider>
         </main>
       )}
     >
