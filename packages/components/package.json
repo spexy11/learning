@@ -10,6 +10,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "katex": "^0.16.35",
     "mathlive": "^0.108.3",
     "solid-js": "catalog:"
   }
