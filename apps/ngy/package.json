@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@learning/components": "workspace:*",
+    "@learning/core": "workspace:*",
     "@learning/exercises": "workspace:",
     "@learning/mdx": "workspace:*",
     "@solidjs/router": "^0.15.0",

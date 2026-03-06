@@ -1,12 +1,17 @@
+import { clientOnly } from '@solidjs/start'
 import { lazy, onMount, Show, type JSX } from 'solid-js'
 
+const Code = clientOnly(() => import('@learning/components/src/Code'))
 const Latex = lazy(() => import('@learning/components/src/Latex'))
 
 const components = {
   h1: (props: JSX.HTMLAttributes<HTMLHeadingElement>) => <h1 class="text-sky-900" {...props} />,
   h2: (props: JSX.HTMLAttributes<HTMLHeadingElement>) => <h2 class="text-sky-800" {...props} />,
   code: (props: JSX.HTMLAttributes<HTMLElement> & { className?: string }) => (
-    <Show when={props.className?.includes('math-')} fallback={<code {...props} />}>
+    <Show
+      when={props.className?.includes('math-')}
+      fallback={<Code value={String(props.children) ?? ''} />}
+    >
       <Latex
         value={String(props.children)}
         displayMode={props.className?.includes('math-display')}

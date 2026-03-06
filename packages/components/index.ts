@@ -1,5 +1,6 @@
 export { default as Button } from './src/Button'
 export { default as CheckMark } from './src/CheckMark'
+export { default as Code } from './src/Code'
 export { default as Field } from './src/Field'
 export { default as Latex } from './src/Latex'
 export { default as MathField } from './src/MathField'
