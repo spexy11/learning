@@ -34,6 +34,23 @@ export default function Code(props: Props) {
 
   let container: HTMLDivElement | undefined
   let view: EditorView | undefined
+
+  const [seen, setSeen] = createSignal(false)
+  let observer: IntersectionObserver | undefined
+  onMount(() => {
+    observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setSeen(true)
+          }
+        })
+      },
+      { threshold: 0.1 },
+    )
+    if (container) observer.observe(container)
+  })
+
   onMount(() => {
     view = new EditorView({
       doc: value(),
@@ -62,7 +79,7 @@ export default function Code(props: Props) {
   return (
     <>
       <div ref={container} class={props.class ?? 'rounded-xl border border-slate-200 shadow'} />
-      <Show when={props.run && props.lang === 'python'}>
+      <Show when={seen() && props.run && props.lang === 'python'}>
         <Python value={`${props.before ?? ''}\n${value()}`} />
       </Show>
     </>
