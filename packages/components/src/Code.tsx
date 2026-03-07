@@ -38,7 +38,16 @@ export default function Code(props: Props) {
     view = new EditorView({
       doc: value(),
       parent: container,
-      extensions: [basicSetup, ...(props.lang ? [languages[props.lang]()] : [])],
+      extensions: [
+        basicSetup,
+        EditorView.updateListener.of((update) => {
+          console.log('Update')
+          if (update.docChanged) {
+            setValue(update.state.doc.toString())
+          }
+        }),
+        ...(props.lang ? [languages[props.lang]()] : []),
+      ],
     })
   })
 
@@ -54,7 +63,7 @@ export default function Code(props: Props) {
     <>
       <div ref={container} class={props.class ?? 'rounded-xl border border-slate-200 shadow'} />
       <Show when={props.run && props.lang === 'python'}>
-        <Python value={`${props.before ?? ''}\n${props.value}`} />
+        <Python value={`${props.before ?? ''}\n${value()}`} />
       </Show>
     </>
   )

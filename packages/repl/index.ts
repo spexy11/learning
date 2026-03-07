@@ -11,18 +11,26 @@ async function initPyodide() {
 
 let pyodidePromise = initPyodide()
 
-export async function runPython(code: string, out: 'stdout' = 'stdout'): Promise<string> {
+type Output = {
+  result?: string
+  error?: string
+  stdout?: string
+}
+export async function runPython(code: string): Promise<Output> {
   const { runPython } = await pyodidePromise
-  return new Promise((r) => {
+  let output: Output = {}
+  try {
     runPython(dedent`
       import sys
       from io import StringIO
       stdout_capture = StringIO()
       sys.stdout = stdout_capture
     `)
-    const output = runPython(code)
-    const stdout = runPython('sys.stdout.getvalue()')
-    if (out === 'stdout') r(stdout)
-    else r(output)
-  })
+    output.result = runPython(code)
+    output.stdout = runPython('sys.stdout.getvalue()')
+  } catch (error) {
+    output.error = (error as any).message
+  } finally {
+    return output
+  }
 }
