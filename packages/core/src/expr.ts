@@ -54,6 +54,7 @@ export function expr(input: MathJson) {
     latex: () => symapi.expr.latex({ expr: json }),
     matches: (expr: MathJson) => symapi.expr.match({ expr1: json, expr2: getMathJson(expr) }),
     roots: () => symapi.expr.roots({ expr: json }),
+    simplify: () => expr(['Simplify', json]),
     subs: (substitutions: Record<string, MathJson>) => expr(ce.box(json).subs(substitutions).json),
   }
 }
