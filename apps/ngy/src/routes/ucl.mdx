@@ -1,8 +1,13 @@
 export { SlideLayout as default } from '@learning/mdx/layouts'
-import { Code } from '@learning/components'
-import { MathField } from '@learning/components'
-import { createSignal } from 'solid-js'
+import { Latex } from '@learning/components'
+import { MathJson } from '@learning/components'
+import { Spinner } from '@learning/components'
+import { createSignal, lazy, Show } from 'solid-js'
 import { expr } from '@learning/core'
+import { createAsync } from '@solidjs/router'
+
+export const Code = lazy(() => import('@learning/components/src/Code'))
+export const MathField = lazy(() => import('@learning/components/src/MathField'))
 
 export const parseCode = String.raw`
 import sympy
@@ -87,17 +92,81 @@ def parse_tree(expr):
 
 - Erreurs d'arrondi et propagation
 
-```python
-0.1 * 0.1
-```
+<Code lang="python" value={'0.1 * 0.1'} run />
+
+# Calcul formel
+
+# Calcul symbolique: distributivité
+
+export const [symExpr, setSymExpr] = createSignal('(x + 1)(x + 2)')
+export const expandedSymExpr = createAsync(async () => {
+  return await expr(symExpr()).expand().latex()
+})
+
+Entrez une expression: <MathField value={symExpr()} onblur={e => setSymExpr(e.target.value)} />
+
+<div class="flex items-center justify-around gap-12">
+  <div class="text-center">
+    <Latex value={symExpr()} />
+    <MathJson value={expr(symExpr()).json} />
+  </div>
+  <div>est transformé en...</div>
+  <div class="text-center">
+    <Spinner fallback="Computing tree...">
+      <Latex value={expandedSymExpr() ?? ''} />
+      <MathJson value={expr(expandedSymExpr()).json} />
+    </Spinner>
+  </div>
+</div>
+
+# Calcul symbolique: égalité
+
+export const [expr1, setExpr1] = createSignal('')
+export const [expr2, setExpr2] = createSignal('')
+export const simplifiedDiff = createAsync(() =>
+  expr(`${expr1()} - (${expr2()})`).simplify().latex(),
+)
+
+<div class="columns-2">
+  <div class="flex items-center justify-around">
+    <label class="block">
+      Expression 1: <MathField value={expr1()} oninput={(e) => setExpr1(e.target.value)} />
+    </label>
+    <MathJson value={expr(expr1()).json} />
+  </div>
+  <div class="flex items-center justify-around">
+    <label class="block">
+      Expression 2: <MathField value={expr2()} oninput={(e) => setExpr2(e.target.value)} />
+    </label>
+    <MathJson value={expr(expr2()).json} />
+  </div>
+</div>
+
+Pour tester l'égalité,
+on regarde si la différence est égale à $0$:
+
+<Show when={expr1().length && expr2().length}>
+  <div class="flex items-center justify-around">
+    <div class="text-center">
+      <h5>
+        Différence: <Latex value={`${expr1()} - (${expr2()})`} />
+      </h5>
+      <MathJson value={expr(`${expr1()} - (${expr2()})`).json} />
+    </div>
+    <p>qui, après simplification, devient</p>
+    <Spinner>
+      <MathJson value={expr(simplifiedDiff()).json} />
+    </Spinner>
+  </div>
+</Show>
 
 # Correction symbolique
 
-export const [value, setValue] = createSignal('')
-export const json = () => JSON.stringify(expr(value()).json)
+export const [value, setValue] = createSignal('\\pi r^2')
+export const json = () => expr(value()).json
 export const code = () => String.raw`from sympy import *
 r, h = symbols("r h")
-attempt = parse_tree(${json()})
+attempt = parse_tree(${JSON.stringify(json())})
 equal = Eq(attempt, pi * r**2 * h) == True
 if equal:
     print("Le résultat est correct")
@@ -105,21 +174,34 @@ else:
     print("Le résultat est incorrect")
 `
 
-<div class="w-1/2">
+export function VolumeExample() {
+  return (
+    <div class="rounded-xl border border-slate-200 p-4">
+      <p>
+        Que vaut le volume d'un cylindre de rayon <Latex value="r" /> et de hauteur{' '}
+        <Latex value="h" />?
+      </p>
+      <p>
+        Réponse: <MathField value={value()} oninput={(e) => setValue(e.target.value)} />
+      </p>
+    </div>
+  )
+}
 
-<div class="rounded-xl border border-slate-200 p-4">
-  <p>Que vaut le volume d'un cylindre de rayon $r$ et de hauteur $h$?</p>
-  <p>
-    Réponse: <MathField value={value()} oninput={(e) => setValue(e.target.value)} />
-  </p>
-</div>
+<VolumeExample />
 
 1. Conversion de la saisie en un **arbre syntaxique**
 
-   <Code lang="json" value={json()} />
+   <div class="flex items-center gap-8">
+     <MathJson value={json()} />
+     <Code value={JSON.stringify(json(), null, 2)} />
+   </div>
+
+2. L'arbre est envoyé à un ordinateur qui s'occupera de la correction symbolique.
+
+# Correction symbolique (partie II)
+
+<VolumeExample />
 
 2. Envoi de l'arbre à un programme de **calcul formel** pour traitement
-
    <Code lang="python" before={parseCode} value={code()} run />
-
-</div>

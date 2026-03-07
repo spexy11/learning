@@ -1,5 +1,6 @@
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
+import { Dynamic } from 'solid-js/web'
 
 export default function Latex(props: { value: string; displayMode?: boolean }) {
   const html = () =>
@@ -14,5 +15,5 @@ export default function Latex(props: { value: string; displayMode?: boolean }) {
         '\\imaginaryI': 'i',
       },
     })
-  return <span class="math-inline" innerHTML={html()} />
+  return <Dynamic component={props.displayMode ? 'div' : 'span'} innerHTML={html()} />
 }

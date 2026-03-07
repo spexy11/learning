@@ -5,18 +5,31 @@ const Code = clientOnly(() => import('@learning/components/src/Code'))
 const Latex = lazy(() => import('@learning/components/src/Latex'))
 
 const components = {
-  h1: (props: JSX.HTMLAttributes<HTMLHeadingElement>) => <h1 class="text-sky-900" {...props} />,
+  h1: (props: JSX.HTMLAttributes<HTMLHeadingElement>) => (
+    <h1 class="text-center text-sky-900" {...props} />
+  ),
   h2: (props: JSX.HTMLAttributes<HTMLHeadingElement>) => <h2 class="text-sky-800" {...props} />,
   code: (props: JSX.HTMLAttributes<HTMLElement> & { className?: string }) => (
     <Show
       when={props.className?.includes('math-')}
-      fallback={<Code value={String(props.children) ?? ''} />}
+      fallback={
+        <Show when={props.className?.includes('language-')} fallback={<code {...props} />}>
+          <pre>{JSON.stringify(props)}</pre>
+          <Code lang="typescript" value={String(props.children) ?? ''} />
+        </Show>
+      }
     >
       <Latex
         value={String(props.children)}
         displayMode={props.className?.includes('math-display')}
       />
     </Show>
+  ),
+  example: (props: JSX.HTMLAttributes<HTMLDivElement>) => (
+    <div class="border-l-6 border-green-700 p-4">
+      <h3 class="no-prose mt-0 text-green-800">Example</h3>
+      {props.children}
+    </div>
   ),
   pre: (props: JSX.HTMLAttributes<HTMLPreElement>) => (
     <pre class="bg-transparent text-black" {...props} />

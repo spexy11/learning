@@ -1,8 +1,9 @@
+import { expr } from '@learning/core'
 import { clientOnly } from '@solidjs/start'
 
 const Dot = clientOnly(() => import('./Dot'))
 
-type Expr = string | number | Expr[]
+type Expr = ReturnType<typeof expr>['json']
 
 function mathjsonToDot(expr: Expr) {
   let nodeId = 0
@@ -38,9 +39,10 @@ function mathjsonToDot(expr: Expr) {
 
 type Props = {
   class?: string
-  value: string
+  value: string | Expr
 }
 
 export default function MathJson(props: Props) {
-  return <Dot class={props.class} value={mathjsonToDot(props.value)} />
+  const json = () => expr(props.value).json
+  return <Dot class={props.class} value={mathjsonToDot(json())} />
 }

@@ -10,6 +10,9 @@ export function Navbar() {
         <li>
           <NavLink href="/learning">Learning</NavLink>
         </li>
+        <li>
+          <NavLink href="/teaching">Teaching</NavLink>
+        </li>
       </ul>
     </nav>
   )
@@ -19,7 +22,7 @@ function NavLink(props: JSX.AnchorHTMLAttributes<HTMLAnchorElement>) {
   const match = useMatch(() => props.href || '')
   return (
     <a
-      class="block border-b-4 border-cyan-950 p-4 hover:border-cyan-600 hover:bg-cyan-900"
+      class="block border-b-4 border-cyan-950 p-3 pt-4 hover:border-cyan-600 hover:bg-cyan-900"
       classList={{ 'border-cyan-500': Boolean(match()) }}
       {...props}
     />
