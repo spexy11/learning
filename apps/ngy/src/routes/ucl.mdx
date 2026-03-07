@@ -4,35 +4,6 @@ import { MathField } from '@learning/components'
 import { createSignal } from 'solid-js'
 import { expr } from '@learning/core'
 
-# Objectifs
-
-- Utiliser le web pour la création de ressources pédagogiques
-
-- Introduction à la correction symbolique
-
-# Création de ressources
-
-# Numérique et symbolique
-
-- Erreurs d'arrondi et propagation
-
-```python
-0.1 * 0.1
-```
-
-# Correction symbolique
-
-export const [value, setValue] = createSignal('')
-export const json = () => JSON.stringify(expr(value()).json)
-export const code = () => String.raw`from sympy import *
-r, h = symbols("r h")
-attempt = parse_tree(${json()})
-equal = Eq(attempt, pi * r**2 * h) == True
-if equal:
-    print("Le résultat est correct")
-else:
-    print("Le résultat est incorrect")
-`
 export const parseCode = String.raw`
 import sympy
 def parse_tree(expr):
@@ -102,6 +73,36 @@ def parse_tree(expr):
             case "Tan":
                 return sympy.tan(*args, evaluate=False)
     raise ValueError("Not a valid expression")
+`
+
+# Objectifs
+
+- Utiliser le web pour la création de ressources pédagogiques
+
+- Introduction à la correction symbolique
+
+# Création de ressources
+
+# Numérique et symbolique
+
+- Erreurs d'arrondi et propagation
+
+```python
+0.1 * 0.1
+```
+
+# Correction symbolique
+
+export const [value, setValue] = createSignal('')
+export const json = () => JSON.stringify(expr(value()).json)
+export const code = () => String.raw`from sympy import *
+r, h = symbols("r h")
+attempt = parse_tree(${json()})
+equal = Eq(attempt, pi * r**2 * h) == True
+if equal:
+    print("Le résultat est correct")
+else:
+    print("Le résultat est incorrect")
 `
 
 <div class="w-1/2">
