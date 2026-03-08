@@ -1,15 +1,15 @@
-import { expr } from '@learning/core'
+import { ComputeEngine, type MathJsonExpression } from '@cortex-js/compute-engine'
 import { clientOnly } from '@solidjs/start'
 
 const Dot = clientOnly(() => import('./Dot'))
 
-type Expr = ReturnType<typeof expr>['json']
+const ce = new ComputeEngine()
 
-function mathjsonToDot(expr: Expr) {
+function mathjsonToDot(expr: MathJsonExpression) {
   let nodeId = 0
   const nodes: string[] = []
   const edges: string[] = []
-  function walk(node: Expr, parentId: string | null = null) {
+  function walk(node: MathJsonExpression, parentId: string | null = null) {
     const currentId = `n${nodeId++}`
     if (Array.isArray(node)) {
       const operator = node[0]
@@ -39,10 +39,10 @@ function mathjsonToDot(expr: Expr) {
 
 type Props = {
   class?: string
-  value: string | Expr
+  value: MathJsonExpression
 }
 
 export default function MathJson(props: Props) {
-  const json = () => expr(props.value).json
+  const json = () => (typeof props.value === 'string' ? ce.parse(props.value).json : props.value)
   return <Dot class={props.class} value={mathjsonToDot(json())} />
 }

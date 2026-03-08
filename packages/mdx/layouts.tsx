@@ -14,7 +14,6 @@ const components = {
       when={props.className?.includes('math-')}
       fallback={
         <Show when={props.className?.includes('language-')} fallback={<code {...props} />}>
-          <pre>{JSON.stringify(props)}</pre>
           <Code lang="typescript" value={String(props.children) ?? ''} />
         </Show>
       }
