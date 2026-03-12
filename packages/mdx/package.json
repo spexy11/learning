@@ -20,6 +20,7 @@
     "remark-directive": "^4.0.0",
     "remark-math": "^6.0.0",
     "remark-sectionize": "^2.1.0",
+    "solid-mdx": "^0.0.7",
     "unist-util-visit": "^5.1.0"
   }
 }

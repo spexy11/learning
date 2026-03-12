@@ -17,10 +17,10 @@
   "dependencies": {
     "@cortex-js/compute-engine": "0.55.5",
     "@learning/components": "workspace:",
-    "@solidjs/router": "^0.15.4",
+    "@solidjs/router": "catalog:",
     "es-toolkit": "^1.44.0",
     "solid-js": "catalog:",
-    "valibot": "^1.2.0",
+    "valibot": "catalog:",
     "zod": "catalog:"
   }
 }
