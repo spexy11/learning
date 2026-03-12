@@ -11,11 +11,16 @@ import {
   type ComponentProps,
   type JSX,
 } from 'solid-js'
-import { createStore } from 'solid-js/store'
+import { createStore, reconcile } from 'solid-js/store'
 import { Dynamic } from 'solid-js/web'
 import * as v from 'valibot'
 import type { Exercise, View } from './schemas'
-import type { BaseExercise, createFeedbackFunction, GradedExercise, ModelRegistry } from './server'
+import {
+  GradedExercise,
+  type BaseExercise,
+  type createFeedbackFunction,
+  type ModelRegistry,
+} from './server'
 
 export type ViewRegistry = Record<string, Component<any>>
 type Props<T extends View<any>> = ComponentProps<T[keyof T]>
@@ -39,15 +44,15 @@ export function createExercise<S extends ModelRegistry, V extends ViewRegistry>(
   grade: Action<[BaseExercise<S>, string, FormData], GradedExercise<S>>,
   getFeedback: ReturnType<typeof query<ReturnType<typeof createFeedbackFunction<S>>>>,
 ) {
-  return function Exercise(props: BaseExercise<S>) {
-    const [exercise, setExercise] = createStore(props)
-
+  return function Exercise(props: GradedExercise<S>) {
     const submission = useSubmission(grade, ([ex]) => isEqual(props, ex))
+    const [graded, setGraded] = createStore(props)
     createEffect(() => {
       if (submission.result) {
-        setExercise(submission.result)
+        setGraded(reconcile(submission.result, { merge: true }))
       }
     })
+
     const field = ({ step, state }: Optional<BaseExercise<S>['attempt'][number], 'state'>) => {
       const exerciseSchema = schema.options.find((s) => s.entries.name.literal === props.name)!
       const stateSchema = exerciseSchema.entries.attempt.item.options.find(
@@ -88,15 +93,15 @@ export function createExercise<S extends ModelRegistry, V extends ViewRegistry>(
     }
 
     const next = () => {
-      if (exercise.attempt.length === 0) return 'start'
-      return exercise.attempt[exercise.attempt.length - 1]!.next
+      if (graded.attempt.length === 0) return 'start'
+      return graded.attempt[graded.attempt.length - 1]!.next
     }
 
     return (
       <>
-        <For each={exercise.attempt}>
+        <For each={graded.attempt}>
           {(part, i) => {
-            const feedback = createAsync(() => getFeedback({ ...props, ...part }))
+            const feedback = createAsync(() => getFeedback({ ...graded, ...part }))
             return (
               <Step index={i() + 1} disabled>
                 <Suspense fallback="Correction en cours...">
@@ -113,8 +118,8 @@ export function createExercise<S extends ModelRegistry, V extends ViewRegistry>(
           }}
         </For>
         <Show when={next()}>
-          <form method="post" action={grade.with(exercise, String(next()))}>
-            <Step index={exercise.attempt.length + 1}>
+          <form method="post" action={grade.with(graded, String(next()))}>
+            <Step index={graded.attempt.length + 1}>
               <Dynamic
                 component={component()}
                 {...props}

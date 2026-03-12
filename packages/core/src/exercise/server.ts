@@ -59,12 +59,24 @@ export type BaseExercise<R extends ModelRegistry> = v.InferOutput<
   ReturnType<typeof BaseExercise<R>>
 >
 
+function getModule<const R extends ModelRegistry, N extends R[number]['schema']['name']>(
+  registry: R,
+  name: N,
+): Extract<R[number], { schema: { name: N } }> {
+  const m = registry.find((m) => m.schema.name === name)
+  if (!m) throw new Error(`${name} does not exist in model registry`)
+  return m as any
+}
+
 export function GradedExercise<const R extends ModelRegistry>(registry: R) {
   return v.pipeAsync(
     BaseExercise(registry),
-    v.transformAsync(async (exercise) => {
-      const m = registry.find((m) => m.schema.name === exercise.name)!
-      return gradeExercise(m, exercise)
+    v.transformAsync(async <N>(exercise: BaseExercise<R> & { name: N }) => {
+      const module = getModule<R, N>(registry, exercise.name)
+      return gradeExercise<(typeof module)['schema'], (typeof module)['feedback']>(
+        module,
+        exercise as Exercise<(typeof module)['schema']>,
+      )
     }),
   )
 }
