@@ -40,16 +40,12 @@ export function createExercise<S extends ModelRegistry, V extends ViewRegistry>(
   getFeedback: ReturnType<typeof query<ReturnType<typeof createFeedbackFunction<S>>>>,
 ) {
   return function Exercise(props: BaseExercise<S>) {
+    const [exercise, setExercise] = createStore(props)
+
     const submission = useSubmission(grade, ([ex]) => isEqual(props, ex))
-    const [attempt, setAttempt] = createStore<BaseExercise<S>['attempt']>([])
-    createEffect(() => {
-      if (props.attempt) {
-        setAttempt(props.attempt)
-      }
-    })
     createEffect(() => {
       if (submission.result) {
-        setAttempt(submission.result.attempt)
+        setExercise(submission.result)
       }
     })
     const field = ({ step, state }: Optional<BaseExercise<S>['attempt'][number], 'state'>) => {
@@ -92,13 +88,13 @@ export function createExercise<S extends ModelRegistry, V extends ViewRegistry>(
     }
 
     const next = () => {
-      if (attempt.length === 0) return 'start'
-      return attempt[attempt.length - 1]!.next
+      if (exercise.attempt.length === 0) return 'start'
+      return exercise.attempt[exercise.attempt.length - 1]!.next
     }
 
     return (
       <>
-        <For each={attempt}>
+        <For each={exercise.attempt}>
           {(part, i) => {
             const feedback = createAsync(() => getFeedback({ ...props, ...part }))
             return (
@@ -117,8 +113,8 @@ export function createExercise<S extends ModelRegistry, V extends ViewRegistry>(
           }}
         </For>
         <Show when={next()}>
-          <form method="post" action={grade.with(props, String(next()))}>
-            <Step index={attempt.length + 1}>
+          <form method="post" action={grade.with(exercise, String(next()))}>
+            <Step index={exercise.attempt.length + 1}>
               <Dynamic
                 component={component()}
                 {...props}
