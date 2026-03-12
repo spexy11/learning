@@ -11,7 +11,8 @@
     "typescript": "^5"
   },
   "scripts": {
-    "codegen": "openapi-typescript http://localhost:8088/openapi.json -o ./src/symapi.d.ts"
+    "codegen": "openapi-typescript http://localhost:8088/openapi.json -o ./src/symapi.d.ts",
+    "dev": "bun scripts/api_codegen.ts"
   },
   "dependencies": {
     "@cortex-js/compute-engine": "0.55.5",
