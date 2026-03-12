@@ -1,7 +1,7 @@
 import pydantic
 import fastapi
 import sympy
-from typing import cast
+from typing import cast, Optional
 from mathjson import Expression
 
 router = fastapi.APIRouter(prefix="/expr")
@@ -77,7 +77,12 @@ def latex(input: OneExpression) -> str:
     return sympy.latex(input.expr.expr)
 
 
+class RootsInput(OneExpression):
+    complex: Optional[bool] = False
+
+
 @router.post("/roots")
-def roots(input: OneExpression) -> list[str]:
-    expr = sympy.solveset(input.expr.expr)
+def roots(input: RootsInput) -> list[str]:
+    domain = sympy.S.Complexes if input.complex else sympy.S.Reals
+    expr = sympy.solveset(input.expr.expr, domain=domain)
     return [sympy.latex(e) for e in expr]
