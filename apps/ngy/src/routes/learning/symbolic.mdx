@@ -111,6 +111,8 @@ The pipeline is as follows:
    by favouring **Compute Engine** as much as possible,
    and being **lazy** for any work that requires SymPy.
 
+   :::example
+
    To get a sense of what it does, we give the following examples
    - Substitutions are handled well by both Compute Engine and SymPy,
      so `@learning/core` delegates to Compute Engine.
@@ -132,3 +134,22 @@ The pipeline is as follows:
    - Checking equality and getting a $\LaTeX$ can only be reliably done on SymPy.
      We send a request with the operation to perform, the MathJSON of the expressions,
      and wait for the response.
+
+   :::
+
+## API
+
+:::example
+
+```typeScript
+import { expr } from '@learning/core'
+
+const attempt = expr('(x - 2)(x - 3)')
+
+await attempt.isEqual('x^2 - 5x + 6') // true
+await attempt.isFactored() // true
+await attempt.diff().latex() // 2x - 5
+await attempt.expand().latex() // x^2 - 5x + 6
+```
+
+:::
