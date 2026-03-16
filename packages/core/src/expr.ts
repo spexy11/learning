@@ -6,19 +6,22 @@ import symapi from './symapi'
 const ce = new ComputeEngine()
 
 const integrateParams = v.union([
-  v.tuple([v.optional(v.string(), 'x')]),
   v.pipe(
-    v.tuple([v.string(), v.union([v.string(), v.number()]), v.union([v.string(), v.number()])]),
+    v.strictTuple([]),
+    v.transform(() => ['x']),
+  ),
+  v.strictTuple([v.string()]),
+  v.pipe(
+    v.strictTuple([v.string(), v.number(), v.number()]),
     v.transform(([x, a, b]) => [['Tuple', x, a, b]] as const),
   ),
 ])
 
-function getMathJson(input?: MathJsonExpression) {
-  if (!input) return ''
+function getMathJson(input: MathJsonExpression) {
   return typeof input === 'string' ? ce.parse(input).json : input
 }
 
-export function expr(input?: MathJsonExpression) {
+function _expr(input: MathJsonExpression) {
   const json = getMathJson(input)
   return {
     json,
@@ -61,6 +64,13 @@ export function expr(input?: MathJsonExpression) {
     subs: (substitutions: Record<string, MathJsonExpression>) =>
       expr(ce.expr(json).subs(substitutions).json),
   }
+}
+
+export function expr<T extends MathJsonExpression | undefined>(
+  input: T,
+): T extends undefined ? undefined : ReturnType<typeof _expr> {
+  if (input === undefined) return undefined as any
+  return _expr(input) as any
 }
 
 function isNegative(expr: MathJsonExpression): boolean {
