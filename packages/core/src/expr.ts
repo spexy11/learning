@@ -17,25 +17,34 @@ const integrateParams = v.union([
   ),
 ])
 
-function getMathJson(input: MathJsonExpression) {
-  return typeof input === 'string' ? ce.parse(input).json : input
-}
+const Math: v.GenericSchema<MathJsonExpression> = v.union([
+  v.pipe(
+    v.string(),
+    v.transform((input) => ce.parse(input).json),
+  ),
+  v.number(),
+  v.tupleWithRest(
+    [v.string()],
+    v.lazy(() => Math),
+  ),
+])
+type Math = v.InferInput<typeof Math>
 
-function _expr(input: MathJsonExpression) {
-  const json = getMathJson(input)
+function _expr(input: Math) {
+  const json = v.parse(Math, input)
   return {
     json,
     abs: () => expr(['Abs', json]),
     get args() {
       if (!Array.isArray(json)) throw new Error(`Only arrays have the property args`)
-      return json.slice(1) as MathJsonExpression[]
+      return json.slice(1) as Math[]
     },
-    checkRoot: (root: MathJsonExpression, x = 'x') =>
+    checkRoot: (root: Math, x = 'x') =>
       expr(json)
         .subs({ [x]: root })
         .isEqual(0),
-    commonRoots: (expr: MathJsonExpression) =>
-      symapi.expr.commonRoots({ expr1: json, expr2: getMathJson(expr) }),
+    commonRoots: (expr: Math) =>
+      symapi.expr.commonRoots({ expr1: json, expr2: v.parse(Math, expr) }),
     diff: (x = 'x') => expr(['Derivative', json, x]),
     expand: () => expr(['Expand', json]),
     factor: () => expr(['Factor', json]),
@@ -49,31 +58,28 @@ function _expr(input: MathJsonExpression) {
       if (!Array.isArray(json) || json[0] !== 'Add' || json.length !== 3) return false
       return isNegative(json[1]) || isNegative(json[2])
     },
-    isEqual: (expr: MathJsonExpression) =>
-      symapi.expr.equal({ expr1: json, expr2: getMathJson(expr) }),
+    isEqual: (expr: Math) => symapi.expr.equal({ expr1: json, expr2: v.parse(Math, expr) }),
     isFactored: () => symapi.expr.isFactored({ expr: json }),
     isSquare: async () => {
       const factored = expr(await expr(json).factor().latex())
       return factored.func === 'Power' && factored.args[1] === 2
     },
     latex: () => symapi.expr.latex({ expr: json }),
-    matches: (expr: MathJsonExpression) =>
-      symapi.expr.match({ expr1: json, expr2: getMathJson(expr) }),
+    matches: (expr: Math) => symapi.expr.match({ expr1: json, expr2: v.parse(Math, expr) }),
     roots: (complex = false) => symapi.expr.roots({ expr: json, complex }),
     simplify: () => expr(['Simplify', json]),
-    subs: (substitutions: Record<string, MathJsonExpression>) =>
-      expr(ce.expr(json).subs(substitutions).json),
+    subs: (substitutions: Record<string, Math>) => expr(ce.expr(json).subs(substitutions).json),
   }
 }
 
-export function expr<T extends MathJsonExpression | undefined>(
+export function expr<T extends Math | undefined>(
   input: T,
 ): T extends undefined ? undefined : ReturnType<typeof _expr> {
   if (input === undefined) return undefined as any
   return _expr(input) as any
 }
 
-function isNegative(expr: MathJsonExpression): boolean {
+function isNegative(expr: Math): boolean {
   if (typeof expr === 'number') return expr < 0
   if (Array.isArray(expr) && expr[0] === 'Negate') return true
   if (Array.isArray(expr) && expr[0] === 'Multiply') return isNegative(expr[1])

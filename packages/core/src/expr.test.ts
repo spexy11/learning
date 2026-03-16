@@ -122,6 +122,13 @@ test.each<Test>([
     promise: expr('x^3 - 1').roots(),
     result: ['1'],
   }),
+  define({
+    desc: 'roots: x^3 + 1 has three complex roots',
+    promise: expr('x^3 - 1')
+      .roots(true)
+      .then((r) => r.length),
+    result: 3,
+  }),
 
   define({
     desc: 'subs: x^2, x -> y',
