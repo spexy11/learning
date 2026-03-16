@@ -1,22 +1,24 @@
-import z from 'zod/v4'
+import * as v from 'valibot'
 
 import { type MathJsonExpression, ComputeEngine } from '@cortex-js/compute-engine'
 import symapi from './symapi'
 
 const ce = new ComputeEngine()
 
-const integrateParams = z.union([
-  z.tuple([z.string().default('x')]),
-  z
-    .tuple([z.string(), z.string().or(z.number()), z.string().or(z.number())])
-    .transform(([x, a, b]) => [['Tuple', x, a, b]] as const),
+const integrateParams = v.union([
+  v.tuple([v.optional(v.string(), 'x')]),
+  v.pipe(
+    v.tuple([v.string(), v.union([v.string(), v.number()]), v.union([v.string(), v.number()])]),
+    v.transform(([x, a, b]) => [['Tuple', x, a, b]] as const),
+  ),
 ])
 
-function getMathJson(input: MathJsonExpression) {
+function getMathJson(input?: MathJsonExpression) {
+  if (!input) return ''
   return typeof input === 'string' ? ce.parse(input).json : input
 }
 
-export function expr(input: MathJsonExpression) {
+export function expr(input?: MathJsonExpression) {
   const json = getMathJson(input)
   return {
     json,
@@ -38,8 +40,8 @@ export function expr(input: MathJsonExpression) {
       if (!Array.isArray(json)) throw new Error(`Only arrays have the property func`)
       return json[0] as string
     },
-    integrate: (...params: z.input<typeof integrateParams>) =>
-      expr(['Integrate', json, ...integrateParams.parse(params)]),
+    integrate: (...params: v.InferInput<typeof integrateParams>) =>
+      expr(['Integrate', json, ...v.parse(integrateParams, params)]),
     isSubtraction: () => {
       if (!Array.isArray(json) || json[0] !== 'Add' || json.length !== 3) return false
       return isNegative(json[1]) || isNegative(json[2])

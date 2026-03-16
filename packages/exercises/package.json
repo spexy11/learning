@@ -12,8 +12,7 @@
     "@solidjs/router": "catalog:",
     "es-toolkit": "catalog:",
     "solid-js": "catalog:",
-    "valibot": "catalog:",
-    "zod": "catalog:"
+    "valibot": "catalog:"
   },
   "peerDependencies": {
     "typescript": "^5"

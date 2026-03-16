@@ -20,7 +20,6 @@
     "@solidjs/router": "catalog:",
     "es-toolkit": "^1.44.0",
     "solid-js": "catalog:",
-    "valibot": "catalog:",
-    "zod": "catalog:"
+    "valibot": "catalog:"
   }
 }

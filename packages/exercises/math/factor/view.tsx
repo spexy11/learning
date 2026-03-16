@@ -1,20 +1,27 @@
 import { CheckMark, MathField } from '@learning/components'
-import type { View } from '@learning/core'
+import { expr, type View } from '@learning/core'
+import { createAsync } from '@solidjs/router'
 
 export default {
-  start: (props) => (
-    <>
-      <p>
-        Factorise <strong>complètement</strong> l'expression {props.field.question.expr}
-      </p>
-      <div class="flex items-center justify-center">
-        {props.field.question.expr}
-        <MathField value="=" readOnly />
-        {props.field.state.attempt}
-        <CheckMark correct={() => props.feedback()?.correct} />
-      </div>
-    </>
-  ),
+  start: (props) => {
+    const attempt = () => expr(props.state?.attempt)
+    const question = () => expr(props.question.expr)
+    const equal = createAsync(() => question().isEqual(attempt()?.json))
+    const factored = createAsync(() => attempt().isFactored())
+    return (
+      <>
+        <p>
+          Factorise <strong>complètement</strong> l'expression {props.field.question.expr}
+        </p>
+        <div class="flex items-center justify-center">
+          {props.field.question.expr}
+          <MathField value="=" readOnly />
+          {props.field.state.attempt}
+          <CheckMark correct={() => equal() && factored()} />
+        </div>
+      </>
+    )
+  },
   binomial: (props) => (
     <>
       <p>
