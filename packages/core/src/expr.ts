@@ -52,8 +52,6 @@ function _expr(input: Math) {
       expr(json)
         .subs({ [x]: root })
         .isEqual(0),
-    commonRoots: (expr: Expression) =>
-      symapi.expr.commonRoots({ expr1: json, expr2: v.parse(Expression, expr) }),
     diff: (x = 'x') => expr(['Derivative', json, x]),
     expand: () => expr(['Expand', json]),
     factor: () => expr(['Factor', json]),
@@ -63,17 +61,9 @@ function _expr(input: Math) {
     },
     integrate: (...params: v.InferInput<typeof integrateParams>) =>
       expr(['Integrate', json, ...v.parse(integrateParams, params)]),
-    isSubtraction: () => {
-      if (!Array.isArray(json) || json[0] !== 'Add' || json.length !== 3) return false
-      return isNegative(json[1]) || isNegative(json[2])
-    },
     isEqual: (expr: Expression) =>
       symapi.expr.equal({ expr1: json, expr2: v.parse(Expression, expr) }),
     isFactored: () => symapi.expr.isFactored({ expr: json }),
-    isSquare: async () => {
-      const factored = expr(await expr(json).factor().latex())
-      return factored.func === 'Power' && factored.args[1] === 2
-    },
     latex: () => symapi.expr.latex({ expr: json }),
     matches: (expr: Expression) =>
       symapi.expr.match({ expr1: json, expr2: v.parse(Expression, expr) }),
@@ -88,11 +78,4 @@ export function expr<T extends Math | undefined>(
 ): T extends undefined ? undefined : ReturnType<typeof _expr> {
   if (input === undefined) return undefined as any
   return _expr(input) as any
-}
-
-function isNegative(expr: Math): boolean {
-  if (typeof expr === 'number') return expr < 0
-  if (Array.isArray(expr) && expr[0] === 'Negate') return true
-  if (Array.isArray(expr) && expr[0] === 'Multiply') return isNegative(expr[1])
-  return false
 }

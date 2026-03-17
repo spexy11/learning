@@ -4,7 +4,7 @@ import { expr } from './expr'
 
 type Test<T = any> = {
   desc: string
-  promise: Promise<T>
+  promise: Promise<T> | T
   result: T
 }
 
@@ -13,6 +13,28 @@ function define<T extends Test>(test: T) {
 }
 
 test.each<Test>([
+  define({
+    desc: 'abs: |i| = 1',
+    promise: expr('i').abs().isEqual(1),
+    result: true,
+  }),
+  define({
+    desc: 'abs: |1 + i| = sqrt(2)',
+    promise: expr('1 + i').abs().isEqual('\\sqrt{2}'),
+    result: true,
+  }),
+  define({
+    desc: 'abs: |-5| != -5',
+    promise: expr(-5).abs().isEqual(-5),
+    result: false,
+  }),
+
+  define({
+    desc: 'args: xy',
+    promise: expr('xy').args,
+    result: ['x', 'y'],
+  }),
+
   define({
     desc: 'checkRoot: 2 is a root of x^2 - 5x + 6',
     promise: expr('x^2 - 5x + 6').checkRoot(2),
@@ -27,6 +49,12 @@ test.each<Test>([
     desc: 'checkRoot: 0 is not a root of x^2 + 1',
     promise: expr('x^2 + 1').checkRoot(0),
     result: false,
+  }),
+
+  define({
+    desc: 'func: xy',
+    promise: expr('xy').func,
+    result: 'Multiply',
   }),
 
   define({
@@ -68,6 +96,12 @@ test.each<Test>([
     desc: 'isEqual: cos x + i sin x = e^{i x}',
     promise: expr('\\cos x + i \\sin x').isEqual('e^{i x}'),
     result: true,
+  }),
+
+  define({
+    desc: 'json: x^2',
+    promise: expr('x^2').json,
+    result: ['Power', 'x', 2],
   }),
 
   define({
