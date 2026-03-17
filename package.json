@@ -22,6 +22,8 @@
   "scripts": {
     "codegen": "turbo run codegen",
     "dev": "turbo run dev",
+    "lint": "turbo run lint && prettier . --write",
+    "lint:check": "turbo run lint:check && prettier . --check",
     "test": "turbo run test",
     "test:watch": "turbo run test:watch"
   },

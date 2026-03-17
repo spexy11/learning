@@ -2,7 +2,6 @@ import pydantic
 import sympy
 from typing import cast
 
-
 type MathJSON = str | int | float | list["MathJSON"]
 
 
