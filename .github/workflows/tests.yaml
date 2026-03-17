@@ -1,0 +1,30 @@
+name: Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: 'Set up Python'
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: './apps/symapi/.python-version'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install JS deps
+        run: bun install
+
+      - name: Run tests
+        run: |
+          bun run -w @learning/symapi dev &
+          for i in {1..30}; do
+            curl -fsS http://localhost:8088/openapi.json > /dev/null && break || echo "waiting..."
+            sleep 1
+          done || exit 1
+          bun run test
