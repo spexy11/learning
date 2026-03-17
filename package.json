@@ -23,7 +23,7 @@
     "codegen": "turbo run codegen",
     "dev": "turbo run dev",
     "lint": "turbo run lint && prettier . --write",
-    "lint:check": "turbo run lint:check && prettier . --check",
+    "lint:check": "turbo run lint:check && bun run prettier . --check",
     "test": "turbo run test",
     "test:watch": "turbo run test:watch"
   },
