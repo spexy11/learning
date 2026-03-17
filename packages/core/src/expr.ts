@@ -1,7 +1,9 @@
 import z from 'zod/v4'
 
-import { type MathJsonExpression, ComputeEngine } from '@cortex-js/compute-engine'
+import { type MathJsonExpression, ComputeEngine, evaluate } from '@cortex-js/compute-engine'
 import symapi from './symapi'
+import { exp } from '@cortex-js/compute-engine/interval'
+import { value } from 'valibot'
 
 const ce = new ComputeEngine()
 
@@ -61,9 +63,27 @@ export function expr(input: MathJsonExpression) {
   }
 }
 
-function isNegative(expr: MathJsonExpression): boolean {
-  if (typeof expr === 'number') return expr < 0
-  if (Array.isArray(expr) && expr[0] === 'Negate') return true
-  if (Array.isArray(expr) && expr[0] === 'Multiply') return isNegative(expr[1])
-  return false
+export function quantity(magnitude: number, unit: string) {
+  const json: MathJsonExpression = ['Quantity', magnitude, unit]
+
+  return {
+    magnitude,
+    unit,
+    json,
+
+  isEqual(otherMagnitude: number, otherUnit: string): boolean {
+    const expr1 = ce.parse(`${magnitude}\\mathrm{${unit}}`)
+    const expr2 = ce.parse(`${otherMagnitude}\\mathrm{${otherUnit}}`)
+
+    const diff = ce.expr(['Subtract', expr1.json, expr2.json]).evaluate()
+
+    // console.log('diff json:', JSON.stringify(diff.json)) test for code review 
+    if (Array.isArray(diff.json) && diff.json[0] === 'Quantity') {
+      return Math.abs(diff.json[1] as number) < 1e-9
+    }
+
+    
+    return false
+},
+  }
 }

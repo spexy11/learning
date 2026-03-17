@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import { expr } from './expr'
+import { expr,quantity } from './expr'
 
 type Test<T = any> = {
   desc: string
@@ -128,6 +128,64 @@ test.each<Test>([
     promise: expr('x^2').subs({ x: 'y' }).latex(),
     result: 'y^{2}',
   }),
+
+define({
+  desc: 'Quantity isEqual: 500g does not equal 1kg',
+  promise: Promise.resolve(quantity(500, 'g').isEqual(1, 'kg')),
+  result: false,
+}),
+define({
+  desc: 'Quantity isEqual: 1km does not equal 1m',
+  promise: Promise.resolve(quantity(1, 'km').isEqual(1, 'm')),
+  result: false,
+}),
+define({
+  desc: 'Quantity isEqual: 1kg does not equal 1m (dimensions incompatibles)',
+  promise: Promise.resolve(quantity(1, 'kg').isEqual(1, 'm')),
+  result: false,
+}),
+define({
+  desc: 'Quantity isEqual: 0.5kg equals 500g',
+  promise: Promise.resolve(quantity(0.5, 'kg').isEqual(500, 'g')),
+  result: true,
+}),
+define({
+  desc: 'Quantity isEqual: 9.8 m/s² equals 980 cm/s²',
+  promise: Promise.resolve(quantity(9.8, 'm/s^2').isEqual(980, 'cm/s^2')),
+  result: true,
+}),
+define({
+  desc: 'Quantity isEqual: 1 m/s² equals 0.001 km/s²',
+  promise: Promise.resolve(quantity(1, 'm/s^2').isEqual(0.001, 'km/s^2')),
+  result: true,
+}),
+define({
+  desc: 'Quantity isEqual: 2 m/s² does not equal 2 m/s',
+  promise: Promise.resolve(quantity(2, 'm/s^2').isEqual(2, 'm/s')),
+  result: false,
+}),
+
+define({
+  desc: 'Quantity isEqual: 1 Pa equals 1 kg/(m*s^2)',
+  promise: Promise.resolve(quantity(1, 'Pa').isEqual(1, 'kg/(m*s^2)')),
+  result: true,
+}),
+define({
+  desc: 'Quantity isEqual: 101325 Pa equals 101.325 kPa',
+  promise: Promise.resolve(quantity(101325, 'Pa').isEqual(101.325, 'kPa')),
+  result: true,
+}),
+define({
+  desc: 'Quantity isEqual: 1 Pa does not equal 2 Pa',
+  promise: Promise.resolve(quantity(1, 'Pa').isEqual(2, 'Pa')),
+  result: false,
+}),
+define({
+  desc: 'Quantity isEqual: 1 Pa does not equal 1 kg/m',
+  promise: Promise.resolve(quantity(1, 'Pa').isEqual(1, 'kg/m')),
+  result: false,
+}),
+
 ])('$desc', async ({ promise, result }) => {
   expect(await promise).toEqual(result)
 })
