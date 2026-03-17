@@ -28,3 +28,8 @@ jobs:
             sleep 1
           done || exit 1
           bun run test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./lcov.info
