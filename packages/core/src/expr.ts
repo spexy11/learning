@@ -30,6 +30,15 @@ const Math: v.GenericSchema<MathJsonExpression> = v.union([
 ])
 type Math = v.InferInput<typeof Math>
 
+export const Expression = v.union([
+  Math,
+  v.pipe(
+    v.looseObject({ json: Math }),
+    v.transform((v) => v.json),
+  ),
+])
+export type Expression = v.InferInput<typeof Expression>
+
 function _expr(input: Math) {
   const json = v.parse(Math, input)
   return {
@@ -43,8 +52,8 @@ function _expr(input: Math) {
       expr(json)
         .subs({ [x]: root })
         .isEqual(0),
-    commonRoots: (expr: Math) =>
-      symapi.expr.commonRoots({ expr1: json, expr2: v.parse(Math, expr) }),
+    commonRoots: (expr: Expression) =>
+      symapi.expr.commonRoots({ expr1: json, expr2: v.parse(Expression, expr) }),
     diff: (x = 'x') => expr(['Derivative', json, x]),
     expand: () => expr(['Expand', json]),
     factor: () => expr(['Factor', json]),
@@ -58,14 +67,16 @@ function _expr(input: Math) {
       if (!Array.isArray(json) || json[0] !== 'Add' || json.length !== 3) return false
       return isNegative(json[1]) || isNegative(json[2])
     },
-    isEqual: (expr: Math) => symapi.expr.equal({ expr1: json, expr2: v.parse(Math, expr) }),
+    isEqual: (expr: Expression) =>
+      symapi.expr.equal({ expr1: json, expr2: v.parse(Expression, expr) }),
     isFactored: () => symapi.expr.isFactored({ expr: json }),
     isSquare: async () => {
       const factored = expr(await expr(json).factor().latex())
       return factored.func === 'Power' && factored.args[1] === 2
     },
     latex: () => symapi.expr.latex({ expr: json }),
-    matches: (expr: Math) => symapi.expr.match({ expr1: json, expr2: v.parse(Math, expr) }),
+    matches: (expr: Expression) =>
+      symapi.expr.match({ expr1: json, expr2: v.parse(Expression, expr) }),
     roots: (complex = false) => symapi.expr.roots({ expr: json, complex }),
     simplify: () => expr(['Simplify', json]),
     subs: (substitutions: Record<string, Math>) => expr(ce.expr(json).subs(substitutions).json),
