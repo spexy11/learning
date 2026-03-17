@@ -22,7 +22,8 @@
   "scripts": {
     "codegen": "turbo run codegen",
     "dev": "turbo run dev",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch"
   },
   "workspaces": [
     "apps/**",

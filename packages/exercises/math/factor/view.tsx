@@ -1,16 +1,8 @@
-import { CheckMark, MathField, Spinner } from '@learning/components'
-import { expr, type View } from '@learning/core'
-import { createAsync } from '@solidjs/router'
+import { CheckMark, MathField } from '@learning/components'
+import { type View } from '@learning/core'
 
 export default {
   start: (props) => {
-    const attempt = () => expr(props.state?.attempt)
-    const question = () => expr(props.question.expr)
-    const equal = createAsync(async () => attempt() && question().isEqual(attempt()!.json))
-    const factored = createAsync(async () => attempt()?.isFactored())
-    const correct = () => equal() && factored()
-
-    const answer = createAsync(() => question().factor().latex())
     return (
       <>
         <p>
@@ -20,9 +12,8 @@ export default {
           {props.field.question.expr}
           <MathField value="=" readOnly />
           {props.field.state.attempt}
-          <CheckMark correct={correct} />
+          <CheckMark correct={() => props.feedback()?.correct} />
         </div>
-        <Spinner>La réponse est {answer()}</Spinner>
       </>
     )
   },
