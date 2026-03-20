@@ -1,6 +1,6 @@
+import { mapAsync } from 'es-toolkit'
 import type { Component } from 'solid-js'
 import * as v from 'valibot'
-import { expr } from '../expr'
 
 type MaybeAsync<T> = T | Promise<T>
 type RawShape = Record<string, v.BaseSchema<any, any, any>>
@@ -50,20 +50,32 @@ function Part<T extends Schema, K extends keyof T['steps'], G extends boolean>(
   step: K,
   graded?: G,
 ) {
-  const extra = {
-    correct: v.boolean(),
-    score: v.strictTuple([v.number(), v.number()]),
-  }
-  return v.object({
+  const base = v.object({
     step: v.literal(step),
     state: v.object((schema.steps as T['steps'])[step as K].state as T['steps'][K]['state']),
-    ...((graded ? extra : {}) as G extends true ? typeof extra : {}),
   })
+  const extended = v.object({
+    ...base.entries,
+    correct: v.boolean(),
+    score: v.strictTuple([v.number(), v.number()]),
+  })
+  return (graded ? extended : base) as G extends true ? typeof extended : typeof base
 }
 
 type Part<T extends Schema, K extends keyof T['steps'], G extends boolean = false> = Infer<
   typeof Part<T, K, G>
 >
+
+function PartUnion<T extends Schema, K extends keyof T['steps'], G extends boolean = false>(
+  schema: T,
+  steps: K[],
+  graded?: G,
+) {
+  return v.variant(
+    'step',
+    steps.map((step) => Part(schema, step, graded)),
+  ) as v.VariantSchema<'step', { [S in K]: ReturnType<typeof Part<T, S, G>> }[K][], undefined>
+}
 
 type Props<
   T extends Schema,
@@ -80,67 +92,59 @@ type Feedback<T extends Schema, K extends keyof T['steps'], L extends (keyof T['
   props: Props<T, K, L, false>,
 ) => MaybeAsync<{ correct: boolean; score: [number, number]; next: keyof T['steps'] | null }>
 
-function defineFeedback<T extends Schema>(data: {
+export function defineFeedback<T extends Schema>(data: {
   [K in keyof T['steps']]: Feedback<T, K, [...T['steps'][K]['previous'], ...(keyof T['steps'])[]]>
 }) {
   return data
 }
 
-function defineView<T extends Schema>(data: {
+type View<T extends Schema> = {
   [K in keyof T['steps']]: Component<
     Props<T, K, [...T['steps'][K]['previous'], ...(keyof T['steps'])[]]>
   >
-}) {
-  return data
 }
 
-export function buildFullSchema<T extends Schema, G extends boolean = false>(
+export function buildSchemas<T extends Schema, G extends boolean = false>(
   schema: T,
-  graded?: G,
+  feedback: ReturnType<typeof defineFeedback<T>>,
 ) {
-  const base = v.object({
-    name: v.literal(schema.name),
-    question: v.object(schema.question),
-    // attempt: v.array([]), // TODO
+  const steps = Object.keys(schema.steps) as T['steps'][keyof T['steps']]
+  const attempt = v.array(PartUnion(schema, steps, false))
+  const gradedAttempt = v.array(PartUnion(schema, steps, true))
+  const common = v.object({
+    name: v.literal(schema.name as T['name']),
+    question: v.object(schema.question as T['question']),
   })
-  return base
+  const base = v.object({
+    ...common.entries,
+    attempt,
+  })
+  return {
+    load: v.pipeAsync(
+      v.object({
+        ...common.entries,
+        attempt: v.union([gradedAttempt, v.null()]),
+      }),
+      v.transformAsync(async ({ attempt, question, ...exercise }) => {
+        if (attempt === null && schema.transform) {
+          question = await schema.transform(question)
+        }
+        return { ...exercise, question, attempt: attempt ?? [] }
+      }),
+    ),
+    grade: v.pipeAsync(
+      base,
+      v.transformAsync(async ({ attempt, ...exercise }) => {
+        const graded = await mapAsync(attempt, async (part, i) => {
+          const result = await feedback[part.step]({
+            question: exercise.question,
+            state: part.state,
+            previous: attempt.slice(0, i).toReversed() as any,
+          })
+          return { ...part, ...result }
+        })
+        return { ...exercise, attempt: graded }
+      }),
+    ),
+  }
 }
-
-// Example
-const schema = defineSchema({
-  name: 'math/factor',
-  question: {
-    expr: v.string(),
-  },
-  transform: async (question) => {
-    return { expr: await expr(question.expr).expand().latex() }
-  },
-  steps: {
-    start: {
-      previous: [],
-      state: {
-        attempt: v.string(),
-      },
-    },
-    root: {
-      previous: ['start'],
-      state: {
-        root: v.string(),
-      },
-    },
-  },
-})
-
-const fee = defineFeedback<typeof schema>({
-  start: async ({ question, state, previous }) => {
-    const correct = true
-    return { correct, score: [1, 1], next: 'root' }
-  },
-  root: async ({ question, state, previous }) => {
-    const correct = true
-    return { correct, score: [0, 0], next: null }
-  },
-})
-
-const part = Part(schema, 'start', true)
-type P = Part<typeof schema, 'start', true>
