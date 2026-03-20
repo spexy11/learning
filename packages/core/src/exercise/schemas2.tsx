@@ -1,3 +1,4 @@
+import type { Component } from 'solid-js'
 import * as v from 'valibot'
 import { expr } from '../expr'
 
@@ -64,17 +65,45 @@ type Part<T extends Schema, K extends keyof T['steps'], G extends boolean = fals
   typeof Part<T, K, G>
 >
 
+type Props<
+  T extends Schema,
+  K extends keyof T['steps'],
+  L extends (keyof T['steps'])[] = [],
+  F extends boolean = true,
+> = {
+  question: InferFromShape<T['question']>
+  state: InferFromShape<T['steps'][K]['state']>
+  previous: { [I in keyof L]: InferFromShape<T['steps'][L[I]]['state']> }
+} & (F extends true ? { feedback: { correct: boolean; score: [number, number] } } : {})
+
 type Feedback<T extends Schema, K extends keyof T['steps'], L extends (keyof T['steps'])[] = []> = (
-  question: InferFromShape<T['question']>,
-  state: InferFromShape<T['steps'][K]['state']>,
-  ...previous: { [I in keyof L]: InferFromShape<T['steps'][L[I]]['state']> }
+  props: Props<T, K, L, false>,
 ) => MaybeAsync<{ correct: boolean; score: [number, number]; next: keyof T['steps'] | null }>
 
-function defineFeedback<
-  T extends Schema,
-  F extends { [K in keyof T['steps']]: Feedback<T, K, T['steps'][K]['previous']> },
->(schema: T, data: F): F {
+function defineFeedback<T extends Schema>(data: {
+  [K in keyof T['steps']]: Feedback<T, K, [...T['steps'][K]['previous'], ...(keyof T['steps'])[]]>
+}) {
   return data
+}
+
+function defineView<T extends Schema>(data: {
+  [K in keyof T['steps']]: Component<
+    Props<T, K, [...T['steps'][K]['previous'], ...(keyof T['steps'])[]]>
+  >
+}) {
+  return data
+}
+
+export function buildFullSchema<T extends Schema, G extends boolean = false>(
+  schema: T,
+  graded?: G,
+) {
+  const base = v.object({
+    name: v.literal(schema.name),
+    question: v.object(schema.question),
+    // attempt: v.array([]), // TODO
+  })
+  return base
 }
 
 // Example
@@ -102,12 +131,12 @@ const schema = defineSchema({
   },
 })
 
-const fee = defineFeedback(schema, {
-  start: async (question, state) => {
+const fee = defineFeedback<typeof schema>({
+  start: async ({ question, state, previous }) => {
     const correct = true
     return { correct, score: [1, 1], next: 'root' }
   },
-  root: async (question, state, previous) => {
+  root: async ({ question, state, previous }) => {
     const correct = true
     return { correct, score: [0, 0], next: null }
   },
