@@ -2,6 +2,7 @@ import 'mathlive'
 import type { MathfieldElement, MathfieldElementAttributes } from 'mathlive'
 import 'mathlive/fonts.css'
 import { createEffect, createSignal, Show, splitProps } from 'solid-js'
+import Latex from './Latex'
 
 declare module 'solid-js' {
   namespace JSX {
@@ -22,8 +23,8 @@ type MathProps = Partial<MathfieldElementAttributes> & {
 }
 
 export default function MathField(props: MathProps) {
-  const [value, setValue] = createSignal(props.value)
-  createEffect(() => setValue(props.value))
+  const [value, setValue] = createSignal(String(props.value))
+  createEffect(() => setValue(String(props.value)))
   const [local, attrs] = splitProps(props, ['name'])
   const cls = () => {
     if (!props.readOnly) {
@@ -33,19 +34,21 @@ export default function MathField(props: MathProps) {
 
   return (
     <>
-      <math-field
-        class={`bg-transparent text-xl ${cls()}`}
-        onInput={(event: InputEvent & { target: MathfieldElement }) => {
-          setValue(event.target.value)
-        }}
-        onkeydown={(event: KeyboardEvent & { target: MathfieldElement }) => {
-          if (event.key === 'Enter') {
-            event.target.closest('form')?.requestSubmit()
-          }
-        }}
-        {...attrs}
-        placeholder={`\\text{${attrs.placeholder ?? ''}}`}
-      />
+      <Show when={!props.readOnly} fallback={<Latex value={value()} {...props} />}>
+        <math-field
+          class={`bg-transparent text-xl ${cls()}`}
+          onInput={(event: InputEvent & { target: MathfieldElement }) => {
+            setValue(event.target.value)
+          }}
+          onkeydown={(event: KeyboardEvent & { target: MathfieldElement }) => {
+            if (event.key === 'Enter') {
+              event.target.closest('form')?.requestSubmit()
+            }
+          }}
+          {...attrs}
+          placeholder={`\\text{${attrs.placeholder ?? ''}}`}
+        />
+      </Show>
       <Show when={props.name}>
         <input type="hidden" name={props.name} value={String(value() || '')} />
       </Show>
