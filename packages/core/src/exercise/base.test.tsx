@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import * as v from 'valibot'
 import { expr } from '../expr'
-import { buildSchemas, defineFeedback, defineSchema } from './schemas2'
+import { buildSchemas, defineFeedback, defineSchema } from './base'
 
 const schema = defineSchema({
   name: 'math/factor',
