@@ -66,7 +66,7 @@ test('exercise schemas: transforms are triggered', async () => {
   const exercise = {
     name: 'math/factor',
     question: { expr: '(x - 1)(x - 1)' },
-    attempt: null,
+    attempt: [],
   }
   const { question } = await grade(exercise)
   expect(question.expr).toBe('x^{2} - 2 x + 1')

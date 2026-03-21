@@ -1,4 +1,7 @@
+import { createAsyncStore } from '@solidjs/router'
 import { mapAsync } from 'es-toolkit'
+import { For, type Component, type ComponentProps } from 'solid-js'
+import { Dynamic } from 'solid-js/web'
 import * as v from 'valibot'
 
 type MaybeAsync<T> = T | Promise<T>
@@ -108,17 +111,14 @@ export function buildSchemas<T extends Schema>(
       v.object({
         name: v.literal(schema.name as T['name']),
         question: v.object(schema.question as T['question']),
-        attempt: v.union([
-          v.array(v.union([PartUnion(schema, steps, true), PartUnion(schema, steps, false)])),
-          v.null(),
-        ]),
+        attempt: v.array(PartUnion(schema, steps, false)),
       }),
       v.transformAsync(async ({ attempt, question, ...exercise }) => {
         let modifiedAttempt: (
-          | NonNullable<typeof attempt>[number]
-          | Pick<NonNullable<typeof attempt>[number], 'step'>
+          | Part<T, T['steps'][keyof T['steps']], true>
+          | { step: keyof T['steps'] }
         )[] = attempt ?? []
-        if (attempt === null && schema.transform) {
+        if (attempt.length === 0 && schema.transform) {
           question = await schema.transform(question)
           modifiedAttempt = [{ step: 'start' }]
         }
@@ -139,5 +139,41 @@ export function buildSchemas<T extends Schema>(
     get grade() {
       return v.parserAsync(this.Student)
     },
+  }
+}
+
+type View<T extends Schema> = { [K in keyof T['steps']]: Component<Props<T, K>> }
+
+export function createView<T extends Schema>(
+  schema: T,
+  feedback: ReturnType<typeof defineFeedback<T>>,
+  view: View<T>,
+) {
+  const { Student, grade } = buildSchemas(schema, feedback)
+  return function Component(props: v.InferInput<typeof Student>) {
+    const exercise = createAsyncStore(() => grade(props))
+    return (
+      <For each={exercise()?.attempt}>
+        {<K extends keyof T['steps']>(
+          part:
+            | Part<T, K, true>
+            | { step: K; state?: undefined; correct?: undefined; score?: undefined },
+          i: () => number,
+        ) => {
+          return (
+            <Dynamic
+              component={view[part.step]}
+              {...({
+                question: exercise()!.question,
+                state: part.state,
+                previous: exercise()!.attempt.slice(0, i()).toReversed() as any,
+                correct: part.correct,
+                score: part.score,
+              } satisfies Props<T, K, true> as ComponentProps<View<T>[K]>)}
+            />
+          )
+        }}
+      </For>
+    )
   }
 }
