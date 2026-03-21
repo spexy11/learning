@@ -28,7 +28,7 @@ const feedback = defineFeedback<typeof schema>({
   },
 })
 
-const { load, grade } = buildSchemas(schema, feedback)
+const { grade } = buildSchemas(schema, feedback)
 
 test('exercise schemas: grading works', async () => {
   const exercise = {
@@ -36,7 +36,7 @@ test('exercise schemas: grading works', async () => {
     question: { expr: 'x^2 - 5x + 6' },
     attempt: [{ step: 'start', state: { attempt: '(x - 2)(x - 3)' } }],
   }
-  const { attempt } = await v.parseAsync(grade, exercise)
+  const { attempt } = await grade(exercise)
   expect(attempt[0]).toMatchObject({
     step: 'start',
     state: { attempt: '(x - 2)(x - 3)' },
@@ -53,7 +53,7 @@ test('exercise schemas: exercises are regraded', async () => {
       { step: 'start', state: { attempt: '(x - 2)(x - 3)' }, correct: false, score: [0, 1] },
     ],
   }
-  const { attempt } = await v.parseAsync(grade, exercise)
+  const { attempt } = await grade(exercise)
   expect(attempt[0]).toMatchObject({
     step: 'start',
     state: { attempt: '(x - 2)(x - 3)' },
@@ -68,6 +68,6 @@ test('exercise schemas: transforms are triggered', async () => {
     question: { expr: '(x - 1)(x - 1)' },
     attempt: null,
   }
-  const { question } = await v.parseAsync(load, exercise)
+  const { question } = await grade(exercise)
   expect(question.expr).toBe('x^{2} - 2 x + 1')
 })

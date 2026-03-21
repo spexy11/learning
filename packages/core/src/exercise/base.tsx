@@ -1,5 +1,4 @@
 import { mapAsync } from 'es-toolkit'
-import type { Component } from 'solid-js'
 import * as v from 'valibot'
 
 type MaybeAsync<T> = T | Promise<T>
@@ -33,7 +32,9 @@ export function defineSchema<
   const N extends string,
   Q extends RawShape,
   T extends (question: InferFromShape<Q>) => Promise<InferFromShape<Q>>,
-  const S extends Record<string, { previous: (keyof S)[]; state: RawShape }>,
+  const S extends Record<string, { previous: (keyof S)[]; state: RawShape }> & {
+    start: { previous: []; state: RawShape }
+  },
 >(schema: { name: N; question: Q; transform?: T; steps: S }) {
   return schema
 }
@@ -42,17 +43,19 @@ type Schema<
   N extends string = any,
   Q extends RawShape = any,
   T extends (question: InferFromShape<Q>) => Promise<InferFromShape<Q>> = any,
-  S extends Record<string, { previous: (keyof S)[]; state: RawShape }> = any,
+  S extends Record<string, { previous: (keyof S)[]; state: RawShape }> & {
+    start: { previous: []; state: RawShape }
+  } = any,
 > = ReturnType<typeof defineSchema<N, Q, T, S>>
 
-function Part<T extends Schema, K extends keyof T['steps'], G extends boolean>(
+function Part<T extends Schema, K extends keyof T['steps'], G extends boolean = false>(
   schema: T,
   step: K,
   graded?: G,
 ) {
   const base = v.object({
-    step: v.literal(step),
-    state: v.object((schema.steps as T['steps'])[step as K].state as T['steps'][K]['state']),
+    step: v.literal(step as K),
+    state: v.object(schema.steps[step].state as T['steps'][K]['state']),
   })
   const extended = v.object({
     ...base.entries,
@@ -66,85 +69,75 @@ type Part<T extends Schema, K extends keyof T['steps'], G extends boolean = fals
   typeof Part<T, K, G>
 >
 
-function PartUnion<T extends Schema, K extends keyof T['steps'], G extends boolean = false>(
-  schema: T,
-  steps: K[],
-  graded?: G,
-) {
+function PartUnion<
+  T extends Schema,
+  K extends readonly (keyof T['steps'])[],
+  G extends boolean = false,
+>(schema: T, steps: K, graded?: G) {
   return v.variant(
     'step',
     steps.map((step) => Part(schema, step, graded)),
-  ) as v.VariantSchema<'step', { [S in K]: ReturnType<typeof Part<T, S, G>> }[K][], undefined>
+  ) as v.VariantSchema<'step', { [I in keyof K]: ReturnType<typeof Part<T, K[I], G>> }, undefined>
 }
 
-type Props<
-  T extends Schema,
-  K extends keyof T['steps'],
-  L extends (keyof T['steps'])[] = [],
-  F extends boolean = true,
-> = {
+type Props<T extends Schema, K extends keyof T['steps'], F extends boolean = true> = {
   question: InferFromShape<T['question']>
-  state: InferFromShape<T['steps'][K]['state']>
-  previous: { [I in keyof L]: InferFromShape<T['steps'][L[I]]['state']> }
-} & (F extends true ? { feedback: { correct: boolean; score: [number, number] } } : {})
+  state?: InferFromShape<T['steps'][K]['state']>
+  previous: {
+    [S in T['steps'][K]['previous'][number]]: InferFromShape<T['steps'][S]['state']>
+  }[T['steps'][K]['previous'][number]][]
+} & (F extends true ? Partial<{ correct: boolean; score: [number, number] }> : {})
 
-type Feedback<T extends Schema, K extends keyof T['steps'], L extends (keyof T['steps'])[] = []> = (
-  props: Props<T, K, L, false>,
+type Feedback<T extends Schema, K extends keyof T['steps']> = (
+  props: Required<Props<T, K, false>>,
 ) => MaybeAsync<{ correct: boolean; score: [number, number]; next: keyof T['steps'] | null }>
 
 export function defineFeedback<T extends Schema>(data: {
-  [K in keyof T['steps']]: Feedback<T, K, [...T['steps'][K]['previous'], ...(keyof T['steps'])[]]>
+  [K in keyof T['steps']]: Feedback<T, K>
 }) {
   return data
 }
 
-type View<T extends Schema> = {
-  [K in keyof T['steps']]: Component<
-    Props<T, K, [...T['steps'][K]['previous'], ...(keyof T['steps'])[]]>
-  >
-}
-
-export function buildSchemas<T extends Schema, G extends boolean = false>(
+export function buildSchemas<T extends Schema>(
   schema: T,
   feedback: ReturnType<typeof defineFeedback<T>>,
 ) {
   const steps = Object.keys(schema.steps) as T['steps'][keyof T['steps']]
-  const attempt = v.array(PartUnion(schema, steps, false))
-  const gradedAttempt = v.array(PartUnion(schema, steps, true))
-  const common = v.object({
-    name: v.literal(schema.name as T['name']),
-    question: v.object(schema.question as T['question']),
-  })
-  const base = v.object({
-    ...common.entries,
-    attempt,
-  })
   return {
-    load: v.pipeAsync(
+    Student: v.pipeAsync(
       v.object({
-        ...common.entries,
-        attempt: v.union([gradedAttempt, v.null()]),
+        name: v.literal(schema.name as T['name']),
+        question: v.object(schema.question as T['question']),
+        attempt: v.union([
+          v.array(v.union([PartUnion(schema, steps, true), PartUnion(schema, steps, false)])),
+          v.null(),
+        ]),
       }),
       v.transformAsync(async ({ attempt, question, ...exercise }) => {
+        let modifiedAttempt: (
+          | NonNullable<typeof attempt>[number]
+          | Pick<NonNullable<typeof attempt>[number], 'step'>
+        )[] = attempt ?? []
         if (attempt === null && schema.transform) {
           question = await schema.transform(question)
+          modifiedAttempt = [{ step: 'start' }]
         }
-        return { ...exercise, question, attempt: attempt ?? [] }
-      }),
-    ),
-    grade: v.pipeAsync(
-      base,
-      v.transformAsync(async ({ attempt, ...exercise }) => {
-        const graded = await mapAsync(attempt, async (part, i) => {
-          const result = await feedback[part.step]({
-            question: exercise.question,
-            state: part.state,
-            previous: attempt.slice(0, i).toReversed() as any,
-          })
-          return { ...part, ...result }
+        modifiedAttempt = await mapAsync(modifiedAttempt, async (part, i) => {
+          if ('state' in part) {
+            const result = await feedback[part.step]({
+              question: question,
+              state: part.state,
+              previous: modifiedAttempt.slice(0, i).toReversed() as any,
+            })
+            return { ...part, ...result }
+          }
+          return part
         })
-        return { ...exercise, attempt: graded }
+        return { ...exercise, question, attempt: modifiedAttempt }
       }),
     ),
+    get grade() {
+      return v.parserAsync(this.Student)
+    },
   }
 }
