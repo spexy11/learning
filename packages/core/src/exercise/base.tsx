@@ -195,13 +195,15 @@ export function createView<T extends Schema>(
             )
             const submit = async () => {
               if (!validated().success) return
-              await props.save({
-                ...exercise(),
-                attempt: [
-                  ...exercise().attempt.toSpliced(-1),
-                  validated().output as Part<T, K, true>,
-                ],
-              })
+              await props.save(
+                await grade({
+                  ...exercise(),
+                  attempt: [
+                    ...exercise().attempt.toSpliced(-1),
+                    validated().output as Part<T, K, true>,
+                  ],
+                }),
+              )
               refresh(() => exercise)
             }
             return (

@@ -73,7 +73,6 @@ export const Factor = createView(schema, feedback, {
   },
   root: (props) => {
     const exercise = useExerciseContext()
-    const attempt = createMemo(() => expr(props.state?.root))
     const correct = createMemo(
       () => props.state && expr(props.question.expr).checkRoot(props.state?.root ?? ''),
     )
