@@ -26,8 +26,10 @@ const schema = defineSchema({
 
 const feedback = defineFeedback<typeof schema>({
   start: async ({ question, state }) => {
-    const equal = await expr(state.attempt).isEqual(question.expr)
-    const factored = await expr(state.attempt).isFactored()
+    const [equal, factored] = await Promise.all([
+      expr(state.attempt).isEqual(question.expr),
+      expr(state.attempt).isFactored(),
+    ])
     const correct = equal && factored
     return { correct, score: [Number(correct), 1], next: correct ? null : 'root' }
   },
