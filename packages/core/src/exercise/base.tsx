@@ -1,8 +1,18 @@
-import { createAsyncStore } from '@solidjs/router'
+import { Dynamic } from '@solidjs/web'
 import { mapAsync } from 'es-toolkit'
-import { For, type Component, type ComponentProps } from 'solid-js'
-import { Dynamic } from 'solid-js/web'
+import {
+  createMemo,
+  createProjection,
+  createStore,
+  For,
+  Loading,
+  refresh,
+  Show,
+  type Component,
+  type ComponentProps,
+} from 'solid-js'
 import * as v from 'valibot'
+import { ExerciseContext } from './context'
 
 type MaybeAsync<T> = T | Promise<T>
 type RawShape = Record<string, v.BaseSchema<any, any, any>>
@@ -83,6 +93,12 @@ function PartUnion<
   ) as v.VariantSchema<'step', { [I in keyof K]: ReturnType<typeof Part<T, K[I], G>> }, undefined>
 }
 
+type PartUnion<
+  T extends Schema,
+  K extends readonly (keyof T['steps'])[] = readonly (keyof T['steps'])[],
+  G extends boolean = false,
+> = Infer<typeof PartUnion<T, K, G>>
+
 type Props<T extends Schema, K extends keyof T['steps'], F extends boolean = true> = {
   question: InferFromShape<T['question']>
   state?: InferFromShape<T['steps'][K]['state']>
@@ -113,6 +129,7 @@ export function buildSchemas<T extends Schema>(
         question: v.object(schema.question as T['question']),
         attempt: v.array(PartUnion(schema, steps, false)),
       }),
+      // TODO: calls need to be deduped, waiting for solid-router release?
       v.transformAsync(async ({ attempt, question, ...exercise }) => {
         let modifiedAttempt: (
           | Part<T, T['steps'][keyof T['steps']], true>
@@ -142,7 +159,14 @@ export function buildSchemas<T extends Schema>(
   }
 }
 
+type Student<T extends Schema> =
+  | v.InferInput<ReturnType<typeof buildSchemas<T>>['Student']>
+  | v.InferOutput<ReturnType<typeof buildSchemas<T>>['Student']>
 type View<T extends Schema> = { [K in keyof T['steps']]: Component<Props<T, K>> }
+type FinalViewProps<T extends Schema> = {
+  fetch: () => MaybeAsync<Student<T>>
+  save: (exercise: v.InferOutput<ReturnType<typeof buildSchemas<T>>['Student']>) => any
+}
 
 export function createView<T extends Schema>(
   schema: T,
@@ -150,30 +174,55 @@ export function createView<T extends Schema>(
   view: View<T>,
 ) {
   const { Student, grade } = buildSchemas(schema, feedback)
-  return function Component(props: v.InferInput<typeof Student>) {
-    const exercise = createAsyncStore(() => grade(props))
+  return function Component(props: FinalViewProps<T>) {
+    const exercise = createProjection(async () => grade(await props.fetch()))
     return (
-      <For each={exercise()?.attempt}>
-        {<K extends keyof T['steps']>(
-          part:
-            | Part<T, K, true>
-            | { step: K; state?: undefined; correct?: undefined; score?: undefined },
-          i: () => number,
-        ) => {
-          return (
-            <Dynamic
-              component={view[part.step]}
-              {...({
-                question: exercise()!.question,
-                state: part.state,
-                previous: exercise()!.attempt.slice(0, i()).toReversed() as any,
-                correct: part.correct,
-                score: part.score,
-              } satisfies Props<T, K, true> as ComponentProps<View<T>[K]>)}
-            />
-          )
-        }}
-      </For>
+      <Loading fallback="Génération de l'exercice...">
+        <For each={exercise.attempt}>
+          {<K extends keyof T['steps']>(
+            part: () =>
+              | Part<T, K, true>
+              | { step: K; state?: never; correct?: never; score?: never },
+            i: () => number,
+          ) => {
+            const [state, setState] = createStore<Partial<Part<T, K>>>(() => part().state ?? {})
+            const validated = createMemo(() =>
+              v.safeParse(Part(schema, part().step), {
+                ...part(),
+                state,
+              }),
+            )
+            const submit = async () => {
+              if (!validated().success) return
+              await props.save({
+                ...exercise,
+                attempt: exercise.attempt.map((p, j) =>
+                  j === i() ? { ...p, ...(validated().output as Part<T, K>) } : p,
+                ),
+              })
+              refresh(() => exercise)
+            }
+            return (
+              <ExerciseContext value={{ state, setState }}>
+                <Dynamic
+                  component={view[part().step]}
+                  {...({
+                    question: exercise.question,
+                    state: part().state,
+                    previous: exercise.attempt.slice(0, i()).toReversed() as any,
+                    correct: part().correct,
+                    score: part().score,
+                  } satisfies Props<T, K> as ComponentProps<View<T>[K]>)}
+                />
+                <Show when={!part().state && validated().success}>
+                  <button onClick={submit}>Soumettre</button>
+                </Show>
+              </ExerciseContext>
+            )
+          }}
+        </For>
+        <pre>{JSON.stringify({ ...exercise }, null, 2)}</pre>
+      </Loading>
     )
   }
 }

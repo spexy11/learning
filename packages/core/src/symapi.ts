@@ -1,4 +1,3 @@
-import { query } from '@solidjs/router'
 import type { paths } from './symapi.d'
 
 const BASE_URL = 'http://localhost:8088'
@@ -28,7 +27,8 @@ type ApiTree<P extends string> = {
     : ApiTree<`${P}/${K}`>
 }
 
-const symapiRequest = query(async (path: string, body: any) => {
+// TODO: dedupe
+const symapiRequest = async (path: string, body: any) => {
   const res = await fetch(`${BASE_URL}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -36,7 +36,7 @@ const symapiRequest = query(async (path: string, body: any) => {
   })
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
   return await res.json()
-}, 'symapiRequest')
+}
 
 function makeProxy<const P extends string>(prefix: P) {
   return new Proxy((() => {}) as any, {
