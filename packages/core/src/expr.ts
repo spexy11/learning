@@ -42,6 +42,7 @@ export type Expression = v.InferInput<typeof Expression>
 function _expr(input: Math) {
   const json = v.parse(Math, input)
   return {
+    rawInput: String(input),
     json,
     abs: () => expr(['Abs', json]),
     get args() {
