@@ -2,7 +2,6 @@ import { Dynamic } from '@solidjs/web'
 import { mapAsync } from 'es-toolkit'
 import {
   createMemo,
-  createProjection,
   createStore,
   For,
   Loading,
@@ -61,43 +60,41 @@ type Schema<
   } = any,
 > = ReturnType<typeof defineSchema<N, Q, T, S>>
 
-function Part<T extends Schema, K extends keyof T['steps'], G extends boolean = false>(
+function Part<T extends Schema, K extends keyof T['steps'], S extends boolean = false>(
   schema: T,
   step: K,
-  graded?: G,
+  withState?: S,
 ) {
   const base = v.object({
     step: v.literal(step as K),
-    state: v.object(schema.steps[step].state as T['steps'][K]['state']),
   })
   const extended = v.object({
     ...base.entries,
-    correct: v.boolean(),
-    score: v.strictTuple([v.number(), v.number()]),
+    state: v.object(schema.steps[step].state as T['steps'][K]['state']),
   })
-  return (graded ? extended : base) as G extends true ? typeof extended : typeof base
+  return (withState ? extended : base) as S extends true ? typeof extended : typeof base
 }
 
-type Part<T extends Schema, K extends keyof T['steps'], G extends boolean = false> = Infer<
-  typeof Part<T, K, G>
+type Part<T extends Schema, K extends keyof T['steps'], S extends boolean = false> = Infer<
+  typeof Part<T, K, S>
 >
 
 function PartUnion<
   T extends Schema,
   K extends readonly (keyof T['steps'])[],
-  G extends boolean = false,
->(schema: T, steps: K, graded?: G) {
+  S extends boolean = false,
+>(schema: T, steps: K, withState?: S) {
   return v.variant(
     'step',
-    steps.map((step) => Part(schema, step, graded)),
-  ) as v.VariantSchema<'step', { [I in keyof K]: ReturnType<typeof Part<T, K[I], G>> }, undefined>
+    steps.map((step) => Part(schema, step, withState)),
+  ) as v.VariantSchema<'step', { [I in keyof K]: ReturnType<typeof Part<T, K[I], S>> }, undefined>
 }
 
 type PartUnion<
   T extends Schema,
   K extends readonly (keyof T['steps'])[] = readonly (keyof T['steps'])[],
-  G extends boolean = false,
-> = Infer<typeof PartUnion<T, K, G>>
+  S extends boolean = false,
+> = Infer<typeof PartUnion<T, K, S>>
 
 type Props<T extends Schema, K extends keyof T['steps'], F extends boolean = true> = {
   question: InferFromShape<T['question']>
@@ -127,20 +124,18 @@ export function buildSchemas<T extends Schema>(
       v.object({
         name: v.literal(schema.name as T['name']),
         question: v.object(schema.question as T['question']),
-        attempt: v.array(PartUnion(schema, steps, false)),
+        attempt: v.array(
+          v.union([PartUnion(schema, steps, true), PartUnion(schema, steps, false)]),
+        ),
       }),
       // TODO: calls need to be deduped, waiting for solid-router release?
       v.transformAsync(async ({ attempt, question, ...exercise }) => {
-        let modifiedAttempt: (
-          | Part<T, T['steps'][keyof T['steps']], true>
-          | { step: keyof T['steps'] }
-        )[] = attempt ?? []
+        let modifiedAttempt = attempt
         if (attempt.length === 0 && schema.transform) {
           question = await schema.transform(question)
-          modifiedAttempt = [{ step: 'start' }]
         }
         modifiedAttempt = await mapAsync(modifiedAttempt, async (part, i) => {
-          if ('state' in part) {
+          if ('state' in part && part.state) {
             const result = await feedback[part.step]({
               question: question,
               state: part.state,
@@ -150,6 +145,11 @@ export function buildSchemas<T extends Schema>(
           }
           return part
         })
+        if (modifiedAttempt.length === 0) modifiedAttempt.push({ step: 'start' })
+        const lastPart = modifiedAttempt.at(-1)
+        if (lastPart && 'next' in lastPart && lastPart.next) {
+          modifiedAttempt.push({ step: lastPart.next })
+        }
         return { ...exercise, question, attempt: modifiedAttempt }
       }),
     ),
@@ -175,10 +175,11 @@ export function createView<T extends Schema>(
 ) {
   const { Student, grade } = buildSchemas(schema, feedback)
   return function Component(props: FinalViewProps<T>) {
-    const exercise = createProjection(async () => grade(await props.fetch()))
+    const exercise = createMemo(async () => grade(await props.fetch()))
     return (
       <Loading fallback="Génération de l'exercice...">
-        <For each={exercise.attempt}>
+        <p>{exercise().attempt.length} étapes</p>
+        <For each={exercise().attempt}>
           {<K extends keyof T['steps']>(
             part: () =>
               | Part<T, K, true>
@@ -187,7 +188,7 @@ export function createView<T extends Schema>(
           ) => {
             const [state, setState] = createStore<Partial<Part<T, K>>>(() => part().state ?? {})
             const validated = createMemo(() =>
-              v.safeParse(Part(schema, part().step), {
+              v.safeParse(Part(schema, part().step, true), {
                 ...part(),
                 state,
               }),
@@ -195,10 +196,11 @@ export function createView<T extends Schema>(
             const submit = async () => {
               if (!validated().success) return
               await props.save({
-                ...exercise,
-                attempt: exercise.attempt.map((p, j) =>
-                  j === i() ? { ...p, ...(validated().output as Part<T, K>) } : p,
-                ),
+                ...exercise(),
+                attempt: [
+                  ...exercise().attempt.toSpliced(-1),
+                  validated().output as Part<T, K, true>,
+                ],
               })
               refresh(() => exercise)
             }
@@ -207,11 +209,9 @@ export function createView<T extends Schema>(
                 <Dynamic
                   component={view[part().step]}
                   {...({
-                    question: exercise.question,
+                    question: exercise().question,
                     state: part().state,
-                    previous: exercise.attempt.slice(0, i()).toReversed() as any,
-                    correct: part().correct,
-                    score: part().score,
+                    previous: exercise().attempt.slice(0, i()).toReversed() as any,
                   } satisfies Props<T, K> as ComponentProps<View<T>[K]>)}
                 />
                 <Show when={!part().state && validated().success}>
@@ -221,7 +221,6 @@ export function createView<T extends Schema>(
             )
           }}
         </For>
-        <pre>{JSON.stringify({ ...exercise }, null, 2)}</pre>
       </Loading>
     )
   }

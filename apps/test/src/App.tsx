@@ -1,4 +1,4 @@
-import { createSignal, snapshot, type Component } from 'solid-js'
+import { createSignal, type Component } from 'solid-js'
 import { Factor } from './Exercise'
 
 const App: Component = () => {
@@ -9,17 +9,7 @@ const App: Component = () => {
   })
   return (
     <>
-      <Factor
-        fetch={() => {
-          console.log('Fetching exercise')
-          return data()
-        }}
-        save={(exercise) => {
-          const ex = snapshot(exercise)
-          console.log('Saving', JSON.stringify(ex, null, 2))
-          setData(ex)
-        }}
-      />
+      <Factor fetch={data} save={setData} />
     </>
   )
 }
