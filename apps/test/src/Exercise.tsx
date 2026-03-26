@@ -57,8 +57,7 @@ export const Factor = createView(schema, feedback, {
             value={props.state?.attempt ?? ''}
             readonly={props.state !== undefined}
             onInput={(e) => {
-              // @ts-ignore
-              exercise.setState((state) => {
+              exercise?.setState((state) => {
                 state.attempt = e.target.value
               })
             }}
@@ -84,8 +83,7 @@ export const Factor = createView(schema, feedback, {
         <input
           value={props.state?.root ?? ''}
           onInput={(e) => {
-            // @ts-ignore
-            exercise.setState((state) => {
+            exercise?.setState((state) => {
               state.root = e.target.value
             })
           }}
