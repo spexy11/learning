@@ -39,9 +39,10 @@ export const Expression = v.union([
 ])
 export type Expression = v.InferInput<typeof Expression>
 
-function _expr(input: Math) {
+function _expr(input: Math, unit: Math = '1') {
   const json = v.parse(Math, input)
-  return {
+  const hasUnit = unit !== '1'
+  return {  
     rawInput: String(input),
     json,
     abs: () => expr(['Abs', json]),
@@ -60,10 +61,36 @@ function _expr(input: Math) {
       if (!Array.isArray(json)) throw new Error(`Only arrays have the property func`)
       return json[0] as string
     },
+    subtract: (other: Math) => expr(['Subtract', json, other]),
+    convert: (toUnit: string) => expr(ce.expr(['UnitConvert', json, toUnit]).evaluate().json),
     integrate: (...params: v.InferInput<typeof integrateParams>) =>
       expr(['Integrate', json, ...v.parse(integrateParams, params)]),
-    isEqual: (expr: Expression) =>
-      symapi.expr.equal({ expr1: json, expr2: v.parse(Expression, expr) }),
+isEqual: async (other: Expression, otherUnit?: Expression, error?: Expression) => {
+  if (!hasUnit && !error) {
+    return symapi.expr.equal({ expr1: json, expr2: v.parse(Expression, other) })
+  }
+
+  const otherRaw = v.parse(Expression, other)  
+  const ceExpr1 = ce.parse(`${json}\\mathrm{${unit}}`)
+  const ceExpr2 = ce.parse(`${otherRaw}\\mathrm{${otherUnit}}`)
+  const diff = ce.expr(['Subtract', ceExpr1.json, ceExpr2.json]).evaluate()
+
+  if (!Array.isArray(diff.json) || diff.json[0] !== 'Quantity') return false
+  const diffMagnitude = diff.json[1] as number
+
+  if (!error) {
+    return symapi.expr.equal({ expr1: diff.json[1] as number, expr2: 0 })
+  }
+
+  const errorEvaluated = ce.parse(error as string).evaluate()
+  if (!Array.isArray(errorEvaluated.json) || errorEvaluated.json[0] !== 'Quantity') return false
+
+  const errorConverted = ce.expr(['UnitConvert', errorEvaluated.json, diff.json[2]]).evaluate()
+  if (!Array.isArray(errorConverted.json)) return false
+
+  const errorMagnitude = (errorConverted.json[1] as number)
+  return diffMagnitude <= errorMagnitude
+},
     isFactored: () => symapi.expr.isFactored({ expr: json }),
     latex: () => symapi.expr.latex({ expr: json }),
     matches: (expr: Expression) =>
@@ -76,7 +103,8 @@ function _expr(input: Math) {
 
 export function expr<T extends Math | undefined>(
   input: T,
+  unit: Math = '1',
 ): T extends undefined ? undefined : ReturnType<typeof _expr> {
   if (input === undefined) return undefined as any
-  return _expr(input) as any
+  return _expr(input, unit) as any
 }
