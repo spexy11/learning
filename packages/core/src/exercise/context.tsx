@@ -1,6 +1,7 @@
 import { createContext, createStore, useContext } from 'solid-js'
 
 type ContextType = {
+  readOnly?: boolean
   state: Record<string, any>
   setState: ReturnType<typeof createStore<Record<string, any>>>[1]
 }
