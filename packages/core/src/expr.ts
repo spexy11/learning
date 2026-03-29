@@ -45,18 +45,18 @@ function _expr(input: Math) {
     rawInput: String(input),
     json,
     abs: () => expr(['Abs', json]),
-    get args() {
+    args: () => {
       if (!Array.isArray(json)) throw new Error(`Only arrays have the property args`)
       return json.slice(1) as Math[]
     },
-    checkRoot: (root: Math, x = 'x') =>
+    checkRoot: (root: Expression, x = 'x') =>
       expr(json)
-        .subs({ [x]: root })
+        .subs({ [x]: v.parse(Expression, root) })
         .isEqual(0),
     diff: (x = 'x') => expr(['Derivative', json, x]),
     expand: () => expr(['Expand', json]),
     factor: () => expr(['Factor', json]),
-    get func() {
+    func: () => {
       if (!Array.isArray(json)) throw new Error(`Only arrays have the property func`)
       return json[0] as string
     },

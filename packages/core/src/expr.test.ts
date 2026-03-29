@@ -31,7 +31,7 @@ test.each<Test>([
 
   define({
     desc: 'args: xy',
-    promise: expr('xy').args,
+    promise: expr('xy').args(),
     result: ['x', 'y'],
   }),
 
@@ -53,7 +53,7 @@ test.each<Test>([
 
   define({
     desc: 'func: xy',
-    promise: expr('xy').func,
+    promise: expr('xy').func(),
     result: 'Multiply',
   }),
 
