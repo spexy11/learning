@@ -38,6 +38,11 @@ def common_roots(input: TwoExpressions) -> list[str]:
     return [sympy.latex(e) for e in expr]
 
 
+@router.post("/degree")
+def degree(input: OneExpression) -> int:
+    return sympy.degree(input.expr.expr)
+
+
 @router.post("/equal")
 def equal(input: TwoExpressions) -> bool:
     expr = input.expr1.expr - input.expr2.expr
@@ -59,6 +64,22 @@ def is_factored(input: OneExpression) -> bool:
         if term.func != sympy.Pow and sympy.factor(term).func == sympy.Pow:
             return False
     return True
+
+
+@router.post("/isPartialFractionDecomposition")
+def is_partial_fraction_decomposition(input: OneExpression) -> bool:
+    expr = input.expr.expr
+
+    def check_term(term: sympy.Expr) -> bool:
+        num, den = sympy.fraction(term)
+        if sympy.degree(num) >= sympy.degree(den):
+            return False
+        return len(set(sympy.real_roots(den))) < 2
+
+    if expr.func == sympy.Add:
+        checks = [check_term(term) for term in args(expr)]
+        return all(checks)
+    return check_term(expr)
 
 
 @router.post("/match")

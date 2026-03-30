@@ -99,6 +99,32 @@ test.each<Test>([
   }),
 
   define({
+    desc: 'partial fractions: 1 / (x^2 - 5x + 6) -> false',
+    promise: expr('1 / (x^2 - 5x + 6)').isPartialFractionDecomposition(),
+    result: false,
+  }),
+  define({
+    desc: 'partial fractions: 1 / (x - 1) -> true',
+    promise: expr('\\frac{1}{x - 1}').isPartialFractionDecomposition(),
+    result: true,
+  }),
+  define({
+    desc: 'partial fractions: 1 / (x - 1)^2 -> true',
+    promise: expr('\\frac{1}{(x - 1)^2}').isPartialFractionDecomposition(),
+    result: true,
+  }),
+  define({
+    desc: 'partial fractions: 1 / (x - 1) + 3 / (x - 2) -> true',
+    promise: expr('\\frac{1}{x - 1} + \\frac{3}{x - 2}').isPartialFractionDecomposition(),
+    result: true,
+  }),
+  define({
+    desc: 'partial fractions: (3x + 1) / (x - 1)^2 -> true',
+    promise: expr('\\frac{3x + 1}{(x - 1)^2}').isPartialFractionDecomposition(),
+    result: true,
+  }),
+
+  define({
     desc: 'json: x^2',
     promise: expr('x^2').json,
     result: ['Power', 'x', 2],
@@ -140,6 +166,11 @@ test.each<Test>([
     desc: 'roots: x^2 - 1',
     promise: expr('x^2 - 1').roots(),
     result: ['-1', '1'],
+  }),
+  define({
+    desc: 'roots: (x - 1)^2',
+    promise: expr('(x - 1)^2').roots(),
+    result: ['1'],
   }),
   define({
     desc: 'roots: x^2 + 1 has no real roots',

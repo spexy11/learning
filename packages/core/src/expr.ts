@@ -53,6 +53,7 @@ function _expr(input: Math) {
       expr(json)
         .subs({ [x]: v.parse(Expression, root) })
         .isEqual(0),
+    degree: () => symapi.expr.degree({ expr: json }),
     diff: (x = 'x') => expr(['Derivative', json, x]),
     expand: () => expr(['Expand', json]),
     factor: () => expr(['Factor', json]),
@@ -65,6 +66,8 @@ function _expr(input: Math) {
     isEqual: (expr: Expression) =>
       symapi.expr.equal({ expr1: json, expr2: v.parse(Expression, expr) }),
     isFactored: () => symapi.expr.isFactored({ expr: json }),
+    isPartialFractionDecomposition: () =>
+      symapi.expr.isPartialFractionDecomposition({ expr: json }),
     latex: () => symapi.expr.latex({ expr: json }),
     matches: (expr: Expression) =>
       symapi.expr.match({ expr1: json, expr2: v.parse(Expression, expr) }),

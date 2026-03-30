@@ -1,28 +1,33 @@
 import { expect, test } from 'bun:test'
 import * as v from 'valibot'
 import { expr } from '../expr'
-import { buildSchemas, defineFeedback, defineSchema } from './base'
+import { buildSchemas, defineFeedback, defineField, defineSchema } from './base'
+
+const Math = defineField({
+  base: v.string(),
+  feedback: v.pipe(v.string(), v.transform(expr)),
+})
 
 const schema = defineSchema({
   name: 'math/factor',
-  question: { expr: v.string() },
+  question: { expr: Math },
   transform: async (question) => {
-    return { expr: await expr(question.expr).expand().latex() }
+    return { expr: await question.expr.expand().latex() }
   },
   steps: {
     start: {
       previous: [],
       state: {
-        attempt: v.string(),
+        attempt: Math,
       },
     },
   },
 })
 
 const feedback = defineFeedback<typeof schema>({
-  start: async ({ question, state }) => {
-    const equal = await expr(state.attempt).isEqual(question.expr)
-    const factored = await expr(state.attempt).isFactored()
+  start: async ({ question: { expr: question }, state: { attempt } }) => {
+    const equal = await attempt.isEqual(question)
+    const factored = await attempt.isFactored()
     const correct = equal && factored
     return { correct, score: [Number(correct), 1], next: null }
   },
