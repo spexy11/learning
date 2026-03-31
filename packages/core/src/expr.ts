@@ -1,89 +1,122 @@
-import z from 'zod/v4'
-
-import { type MathJsonExpression, ComputeEngine, evaluate } from '@cortex-js/compute-engine'
+import { type ExpressionInput, ComputeEngine, N } from '@cortex-js/compute-engine'
+import * as v from 'valibot'
 import symapi from './symapi'
-import { exp } from '@cortex-js/compute-engine/interval'
-import { value } from 'valibot'
 
 const ce = new ComputeEngine()
 
-const integrateParams = z.union([
-  z.tuple([z.string().default('x')]),
-  z
-    .tuple([z.string(), z.string().or(z.number()), z.string().or(z.number())])
-    .transform(([x, a, b]) => [['Tuple', x, a, b]] as const),
+const integrateParams = v.union([
+  v.pipe(
+    v.strictTuple([]),
+    v.transform(() => ['x']),
+  ),
+  v.strictTuple([v.string()]),
+  v.pipe(
+    v.strictTuple([v.string(), v.number(), v.number()]),
+    v.transform(([x, a, b]) => [['Tuple', x, a, b]] as const),
+  ),
 ])
 
-function getMathJson(input: MathJsonExpression) {
-  return typeof input === 'string' ? ce.parse(input).json : input
-}
+const Math: v.GenericSchema<ExpressionInput> = v.union([
+  v.pipe(
+    v.string(),
+    v.transform((input) => ce.parse(input).json),
+  ),
+  v.number(),
+  v.tupleWithRest(
+    [v.string()],
+    v.lazy(() => Math),
+  ),
+])
+type Math = v.InferInput<typeof Math>
 
-export function expr(input: MathJsonExpression) {
-  const json = getMathJson(input)
+export const Expression = v.union([
+  Math,
+  v.pipe(
+    v.looseObject({ json: Math }),
+    v.transform((v) => v.json),
+  ),
+])
+export type Expression = v.InferInput<typeof Expression>
+
+function _expr(input: Math) {
+  const json = v.parse(Math, input)
   return {
+    rawInput: String(input),
     json,
     abs: () => expr(['Abs', json]),
-    get args() {
+    args: () => {
       if (!Array.isArray(json)) throw new Error(`Only arrays have the property args`)
-      return json.slice(1) as MathJsonExpression[]
+      return json.slice(1) as Math[]
     },
-    checkRoot: (root: MathJsonExpression, x = 'x') =>
+    checkRoot: (root: Expression, x = 'x') =>
       expr(json)
-        .subs({ [x]: root })
+        .subs({ [x]: v.parse(Expression, root) })
         .isEqual(0),
-    commonRoots: (expr: MathJsonExpression) =>
-      symapi.expr.commonRoots({ expr1: json, expr2: getMathJson(expr) }),
     diff: (x = 'x') => expr(['Derivative', json, x]),
     expand: () => expr(['Expand', json]),
+    evaluate: () => ce.expr(json).evaluate(),
+    N: () => N(expr(json).evaluate()) as unknown as number,
     factor: () => expr(['Factor', json]),
-    get func() {
+    func: () => {
       if (!Array.isArray(json)) throw new Error(`Only arrays have the property func`)
       return json[0] as string
     },
-    integrate: (...params: z.input<typeof integrateParams>) =>
-      expr(['Integrate', json, ...integrateParams.parse(params)]),
-    isSubtraction: () => {
-      if (!Array.isArray(json) || json[0] !== 'Add' || json.length !== 3) return false
-      return isNegative(json[1]) || isNegative(json[2])
-    },
-    isEqual: (expr: MathJsonExpression) =>
-      symapi.expr.equal({ expr1: json, expr2: getMathJson(expr) }),
+    integrate: (...params: v.InferInput<typeof integrateParams>) =>
+      expr(['Integrate', json, ...v.parse(integrateParams, params)]),
+    isEqual: (other: Expression) =>
+      symapi.expr.equal({ expr1: json, expr2: v.parse(Expression, other) }),
     isFactored: () => symapi.expr.isFactored({ expr: json }),
-    isSquare: async () => {
-      const factored = expr(await expr(json).factor().latex())
-      return factored.func === 'Power' && factored.args[1] === 2
-    },
     latex: () => symapi.expr.latex({ expr: json }),
-    matches: (expr: MathJsonExpression) =>
-      symapi.expr.match({ expr1: json, expr2: getMathJson(expr) }),
+    matches: (other: Expression) =>
+      symapi.expr.match({ expr1: json, expr2: v.parse(Expression, other) }),
     roots: (complex = false) => symapi.expr.roots({ expr: json, complex }),
     simplify: () => expr(['Simplify', json]),
-    subs: (substitutions: Record<string, MathJsonExpression>) =>
-      expr(ce.expr(json).subs(substitutions).json),
+    subs: (substitutions: Record<string, Math>) => expr(ce.expr(json).subs(substitutions).json),
   }
 }
 
-export function quantity(magnitude: number, unit: string) {
-  const json: MathJsonExpression = ['Quantity', magnitude, unit]
+export function expr<T extends Math | undefined>(
+  input: T,
+): T extends undefined ? undefined : ReturnType<typeof _expr> {
+  if (input === undefined) return undefined as any
+  return _expr(input) as any
+}
+
+const Quantity = v.union([
+  Math,
+  v.pipe(
+    v.tuple([Math, Math]),
+    v.transform((quantity) => ce.expr(['Quantity', ...quantity]).evaluate()),
+  ),
+])
+type Quantity = v.InferInput<typeof Quantity>
+
+export function quantity(qty: Quantity) {
+  const json = v.parse(Quantity, qty)
+
+  function apply(method: string, ...args: ExpressionInput[]) {
+    return ce.expr([method, ...args]).evaluate()
+  }
 
   return {
-    magnitude,
-    unit,
+    convert: (rawUnit: Quantity) => {
+      const unit = v.parse(Quantity, rawUnit)
+      return quantity(apply('UnitConvert', json, unit).json)
+    },
+    magnitude: () => expr(apply('QuantityMagnitude', json).json),
+    subtract: (rawOther: Quantity) => {
+      const other = v.parse(Quantity, rawOther)
+      return quantity(apply('Subtract', json, other).json)
+    },
+    unit: () => apply('QuantityUnit', json).latex,
     json,
 
-  isEqual(otherMagnitude: number, otherUnit: string): boolean {
-    const expr1 = ce.parse(`${magnitude}\\mathrm{${unit}}`)
-    const expr2 = ce.parse(`${otherMagnitude}\\mathrm{${otherUnit}}`)
-
-    const diff = ce.expr(['Subtract', expr1.json, expr2.json]).evaluate()
-
-    // console.log('diff json:', JSON.stringify(diff.json)) test for code review 
-    if (Array.isArray(diff.json) && diff.json[0] === 'Quantity') {
-      return Math.abs(diff.json[1] as number) < 1e-9
-    }
-
-    
-    return false
-},
+    async isEqual(rawExpr2: Quantity, rawError?: Quantity) {
+      const expr2 = v.parse(Quantity, rawExpr2)
+      const error = rawError ? v.parse(Quantity, rawError) : undefined
+      if (!error) return this.subtract(expr2).magnitude().isEqual(0)
+      const diff = this.subtract(expr2).convert(error).magnitude().abs().N()
+      return diff < quantity(error).magnitude().abs().N()
+    },
   }
 }

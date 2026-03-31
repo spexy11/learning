@@ -27,19 +27,24 @@ type ApiTree<P extends string> = {
     : ApiTree<`${P}/${K}`>
 }
 
+// TODO: dedupe
+const symapiRequest = async (path: string, body: any) => {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+  return await res.json()
+}
+
 function makeProxy<const P extends string>(prefix: P) {
   return new Proxy((() => {}) as any, {
     get(_, attr: Folders<P>) {
       return makeProxy(`${prefix}/${attr}`)
     },
-    async apply(_, __, params: any) {
-      const res = await fetch(`${BASE_URL}${prefix}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params[0]),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
-      return await res.json()
+    apply(_, __, [body]: any) {
+      return symapiRequest(prefix, body)
     },
   }) as ApiTree<P>
 }

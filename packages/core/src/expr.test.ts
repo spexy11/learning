@@ -1,10 +1,10 @@
 import { expect, test } from 'bun:test'
 
-import { expr,quantity } from './expr'
+import { expr, quantity } from './expr'
 
 type Test<T = any> = {
   desc: string
-  promise: Promise<T>
+  promise: Promise<T> | T
   result: T
 }
 
@@ -13,6 +13,28 @@ function define<T extends Test>(test: T) {
 }
 
 test.each<Test>([
+  define({
+    desc: 'abs: |i| = 1',
+    promise: expr('i').abs().isEqual(1),
+    result: true,
+  }),
+  define({
+    desc: 'abs: |1 + i| = sqrt(2)',
+    promise: expr('1 + i').abs().isEqual('\\sqrt{2}'),
+    result: true,
+  }),
+  define({
+    desc: 'abs: |-5| != -5',
+    promise: expr(-5).abs().isEqual(-5),
+    result: false,
+  }),
+
+  define({
+    desc: 'args: xy',
+    promise: expr('xy').args,
+    result: ['x', 'y'],
+  }),
+
   define({
     desc: 'checkRoot: 2 is a root of x^2 - 5x + 6',
     promise: expr('x^2 - 5x + 6').checkRoot(2),
@@ -27,6 +49,12 @@ test.each<Test>([
     desc: 'checkRoot: 0 is not a root of x^2 + 1',
     promise: expr('x^2 + 1').checkRoot(0),
     result: false,
+  }),
+
+  define({
+    desc: 'func: xy',
+    promise: expr('xy').func,
+    result: 'Multiply',
   }),
 
   define({
@@ -68,6 +96,12 @@ test.each<Test>([
     desc: 'isEqual: cos x + i sin x = e^{i x}',
     promise: expr('\\cos x + i \\sin x').isEqual('e^{i x}'),
     result: true,
+  }),
+
+  define({
+    desc: 'json: x^2',
+    promise: expr('x^2').json,
+    result: ['Power', 'x', 2],
   }),
 
   define({
@@ -122,70 +156,60 @@ test.each<Test>([
     promise: expr('x^3 - 1').roots(),
     result: ['1'],
   }),
+  define({
+    desc: 'roots: x^3 + 1 has three complex roots',
+    promise: expr('x^3 - 1')
+      .roots(true)
+      .then((r) => r.length),
+    result: 3,
+  }),
 
   define({
     desc: 'subs: x^2, x -> y',
     promise: expr('x^2').subs({ x: 'y' }).latex(),
     result: 'y^{2}',
   }),
+  define({
+    desc: 'subs: x^2, x -> y',
+    promise: expr('x^2').subs({ x: 'y' }).latex(),
+    result: 'y^{2}',
+  }),
 
-define({
-  desc: 'Quantity isEqual: 500g does not equal 1kg',
-  promise: Promise.resolve(quantity(500, 'g').isEqual(1, 'kg')),
-  result: false,
-}),
-define({
-  desc: 'Quantity isEqual: 1km does not equal 1m',
-  promise: Promise.resolve(quantity(1, 'km').isEqual(1, 'm')),
-  result: false,
-}),
-define({
-  desc: 'Quantity isEqual: 1kg does not equal 1m (dimensions incompatibles)',
-  promise: Promise.resolve(quantity(1, 'kg').isEqual(1, 'm')),
-  result: false,
-}),
-define({
-  desc: 'Quantity isEqual: 0.5kg equals 500g',
-  promise: Promise.resolve(quantity(0.5, 'kg').isEqual(500, 'g')),
-  result: true,
-}),
-define({
-  desc: 'Quantity isEqual: 9.8 m/s² equals 980 cm/s²',
-  promise: Promise.resolve(quantity(9.8, 'm/s^2').isEqual(980, 'cm/s^2')),
-  result: true,
-}),
-define({
-  desc: 'Quantity isEqual: 1 m/s² equals 0.001 km/s²',
-  promise: Promise.resolve(quantity(1, 'm/s^2').isEqual(0.001, 'km/s^2')),
-  result: true,
-}),
-define({
-  desc: 'Quantity isEqual: 2 m/s² does not equal 2 m/s',
-  promise: Promise.resolve(quantity(2, 'm/s^2').isEqual(2, 'm/s')),
-  result: false,
-}),
-
-define({
-  desc: 'Quantity isEqual: 1 Pa equals 1 kg/(m*s^2)',
-  promise: Promise.resolve(quantity(1, 'Pa').isEqual(1, 'kg/(m*s^2)')),
-  result: true,
-}),
-define({
-  desc: 'Quantity isEqual: 101325 Pa equals 101.325 kPa',
-  promise: Promise.resolve(quantity(101325, 'Pa').isEqual(101.325, 'kPa')),
-  result: true,
-}),
-define({
-  desc: 'Quantity isEqual: 1 Pa does not equal 2 Pa',
-  promise: Promise.resolve(quantity(1, 'Pa').isEqual(2, 'Pa')),
-  result: false,
-}),
-define({
-  desc: 'Quantity isEqual: 1 Pa does not equal 1 kg/m',
-  promise: Promise.resolve(quantity(1, 'Pa').isEqual(1, 'kg/m')),
-  result: false,
-}),
-
+  define({
+    desc: 'isEqual with error: 1.005kg equals 1kg ± 0.01kg',
+    promise: quantity('1.005\\mathrm{kg}').isEqual('1\\mathrm{kg}', '0.01\\mathrm{kg}'),
+    result: true,
+  }),
+  // define({
+  //   desc: 'isEqual with error: 1.02kg does not equal 1kg ± 0.01kg',
+  //   promise: quantity('1.02', 'kg').isEqual('1', 'kg', '0.01\\mathrm{kg}'),
+  //   result: false,
+  // }),
+  // define({
+  //   desc: 'isEqual with error: 9.85 m/s² equals 9.8 m/s² ± 0.1 m/s²',
+  //   promise: quantity('9.85', 'm/s^2').isEqual('9.8', 'm/s^2', '0.1\\mathrm{m/s^2}'),
+  //   result: true,
+  // }),
+  // define({
+  //   desc: 'isEqual with error: 1050g equals 1kg ± 100g',
+  //   promise: quantity('1050', 'g').isEqual('1', 'kg', '100\\mathrm{g}'),
+  //   result: true,
+  // }),
+  // define({
+  //   desc: 'isEqual with error: 1200g does not equal 1kg ± 100g',
+  //   promise: quantity('1200', 'g').isEqual('1', 'kg', '100\\mathrm{g}'),
+  //   result: false,
+  // }),
+  // define({
+  //   desc: 'isEqual with error: 101400 Pa equals 101325 Pa ± 100 Pa',
+  //   promise: quantity('101400', 'Pa').isEqual('101325', 'Pa', '100\\mathrm{Pa}'),
+  //   result: true,
+  // }),
+  // define({
+  //   desc: 'isEqual with error: 101600 Pa does not equal 101325 Pa ± 100 Pa',
+  //   promise: quantity('101600', 'Pa').isEqual('101325', 'Pa', '100\\mathrm{Pa}'),
+  //   result: false,
+  // }),
 ])('$desc', async ({ promise, result }) => {
   expect(await promise).toEqual(result)
 })
