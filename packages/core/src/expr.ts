@@ -1,5 +1,5 @@
+import { type ExpressionInput, ComputeEngine, N } from '@cortex-js/compute-engine'
 import * as v from 'valibot'
-import { type MathJsonExpression, ComputeEngine } from '@cortex-js/compute-engine'
 import symapi from './symapi'
 
 const ce = new ComputeEngine()
@@ -16,7 +16,7 @@ const integrateParams = v.union([
   ),
 ])
 
-const Math: v.GenericSchema<MathJsonExpression> = v.union([
+const Math: v.GenericSchema<ExpressionInput> = v.union([
   v.pipe(
     v.string(),
     v.transform((input) => ce.parse(input).json),
@@ -38,8 +38,6 @@ export const Expression = v.union([
 ])
 export type Expression = v.InferInput<typeof Expression>
 
-
-
 function _expr(input: Math) {
   const json = v.parse(Math, input)
   return {
@@ -56,6 +54,8 @@ function _expr(input: Math) {
         .isEqual(0),
     diff: (x = 'x') => expr(['Derivative', json, x]),
     expand: () => expr(['Expand', json]),
+    evaluate: () => ce.expr(json).evaluate(),
+    N: () => N(expr(json).evaluate()) as unknown as number,
     factor: () => expr(['Factor', json]),
     func: () => {
       if (!Array.isArray(json)) throw new Error(`Only arrays have the property func`)
@@ -82,36 +82,41 @@ export function expr<T extends Math | undefined>(
   return _expr(input) as any
 }
 
+const Quantity = v.union([
+  Math,
+  v.pipe(
+    v.tuple([Math, Math]),
+    v.transform((quantity) => ce.expr(['Quantity', ...quantity]).evaluate()),
+  ),
+])
+type Quantity = v.InferInput<typeof Quantity>
 
+export function quantity(qty: Quantity) {
+  const json = v.parse(Quantity, qty)
 
-export function quantity(magnitude: Math, unit: Math,error?:Math) {
-  const json: MathJsonExpression = ['Quantity', magnitude, unit]
+  function apply(method: string, ...args: ExpressionInput[]) {
+    return ce.expr([method, ...args]).evaluate()
+  }
 
   return {
-    magnitude,
-    unit,
+    convert: (rawUnit: Quantity) => {
+      const unit = v.parse(Quantity, rawUnit)
+      return quantity(apply('UnitConvert', json, unit).json)
+    },
+    magnitude: () => expr(apply('QuantityMagnitude', json).json),
+    subtract: (rawOther: Quantity) => {
+      const other = v.parse(Quantity, rawOther)
+      return quantity(apply('Subtract', json, other).json)
+    },
+    unit: () => apply('QuantityUnit', json).latex,
     json,
-    error,
 
-    async isEqual(otherMagnitude: Math, otherUnit: Math, error: Math = '1'): Promise<boolean >{
-
-      const expr1 = ce.parse(`${magnitude}\\mathrm{${unit}}`)
-      const expr2 = ce.parse(`${otherMagnitude}\\mathrm{${otherUnit}}`)
-      const diff = ce.expr(['Subtract', expr1.json, expr2.json]).evaluate()
-      console.log(diff.json)
-      if (!error && Array.isArray(diff.json)) {
-        if (Array.isArray(diff.json)) {
-          return symapi.expr.equal({ expr1: diff.json[1], expr2: 0 })
-        }
-      }
-      if (Array.isArray(diff.json) && diff.json[0] === 'Quantity') {
-          const errorEvaluated = ce.parse(error as string).evaluate()
-          const errorConverted =  ce.expr(['UnitConvert', errorEvaluated, diff.json[2]]).evaluate()
-          if (Array.isArray(errorConverted.json) && errorConverted.json[0] === 'Quantity')
-          return ((diff.json[1] as number) < (errorConverted.json[1] as number) && (diff.json[1] as number) < (errorConverted.json[1] as number))
-      }
-
-      return false
+    async isEqual(rawExpr2: Quantity, rawError?: Quantity) {
+      const expr2 = v.parse(Quantity, rawExpr2)
+      const error = rawError ? v.parse(Quantity, rawError) : undefined
+      if (!error) return this.subtract(expr2).magnitude().isEqual(0)
+      const diff = this.subtract(expr2).convert(error).magnitude().abs().N()
+      return diff < quantity(error).magnitude().abs().N()
     },
   }
 }
