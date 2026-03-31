@@ -1,5 +1,5 @@
 import { Dynamic } from '@solidjs/web'
-import { mapAsync, mapValues } from 'es-toolkit'
+import { mapAsync, mapValues, sample } from 'es-toolkit'
 import {
   createMemo,
   createStore,
@@ -147,19 +147,50 @@ function Attempt<T extends Schema, V extends 'base' | 'feedback'>(schema: T, sta
   )
 }
 
+function Param<T extends boolean>(transform: T) {
+  const value = v.union([v.number(), v.string()])
+  const base = v.array(value)
+  const withTransform = v.pipe(base, v.transform(sample))
+  return (transform ? withTransform : base) as T extends true ? typeof withTransform : typeof base
+}
+
+function Params<T extends boolean>(transform: T) {
+  return v.record(v.string(), Param(transform))
+}
+
 export function buildSchemas<T extends Schema>(
   schema: T,
   feedback: ReturnType<typeof defineFeedback<T>>,
 ) {
   return {
+    Teacher: v.object({
+      name: v.literal(schema.name as T['name']),
+      question: RawShapeSchema(schema.question as T['question'], 'base'),
+      params: v.optional(Params(false)),
+    }),
     Student: v.pipeAsync(
       v.object({
         name: v.literal(schema.name as T['name']),
         question: RawShapeSchema(schema.question as T['question'], 'base'),
         attempt: Attempt(schema, 'base'),
+        params: v.optional(Params(true)),
       }),
       // TODO: calls need to be deduped, waiting for solid-router release?
-      v.transformAsync(async ({ attempt, question, ...exercise }) => {
+      v.transformAsync(async ({ attempt, question: q, params, ...exercise }) => {
+        let question = q
+        function subs<T extends any>(param: string, value: string, v: T): T {
+          if (typeof v === 'string') {
+            return v.replaceAll(`{${param}}`, value) as T
+          } else if (Array.isArray(v)) {
+            return v.map(subs.bind(null, param, value)) as T
+          } else if (typeof v === 'object' && v !== null) {
+            return mapValues(v, subs.bind(null, param, value)) as T
+          }
+          return v
+        }
+        for (const [param, value] of Object.entries(params ?? {})) {
+          question = subs(param, String(value), question)
+        }
         const parsedQuestion = v.parse(
           RawShapeSchema(schema.question as T['question'], 'feedback'),
           question,

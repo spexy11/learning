@@ -20,6 +20,7 @@ const integrateParams = v.union([
 const Math: v.GenericSchema<MathJsonExpression> = v.union([
   v.pipe(
     v.string(),
+    v.check((expr) => ce.parse(expr).isValid, "Ceci n'est pas une expression mathématique valide"),
     v.transform((input) => ce.parse(input).json),
   ),
   v.number(),
