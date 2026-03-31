@@ -1,48 +1,57 @@
-import { createView, defineFeedback, defineSchema, expr, useExerciseContext } from '@learning/core'
+import {
+  createView,
+  defineFeedback,
+  defineField,
+  defineSchema,
+  expr,
+  useExerciseContext,
+} from '@learning/core'
 import { createMemo, Show } from 'solid-js'
 import * as v from 'valibot'
 
+const Math = defineField({
+  base: v.string(),
+  feedback: v.pipe(v.string(), v.transform(expr)),
+})
+
 const schema = defineSchema({
   name: 'math/factor',
-  question: { expr: v.string() },
+  question: { expr: Math },
   transform: async (question) => {
-    return { expr: await expr(question.expr).expand().latex() }
+    return { expr: await question.expr.expand().latex() }
   },
   steps: {
     start: {
       previous: [],
       state: {
-        attempt: v.string(),
+        attempt: Math,
       },
     },
     root: {
       previous: ['start'],
       state: {
-        root: v.string(),
+        root: Math,
       },
     },
   },
 })
 
 const feedback = defineFeedback<typeof schema>({
-  start: async ({ question, state }) => {
-    const [equal, factored] = await Promise.all([
-      expr(state.attempt).isEqual(question.expr),
-      expr(state.attempt).isFactored(),
-    ])
+  start: async ({ question: { expr }, state: { attempt } }) => {
+    const [equal, factored] = await Promise.all([attempt.isEqual(expr), attempt.isFactored()])
     const correct = equal && factored
     return { correct, score: [Number(correct), 1], next: correct ? null : 'root' }
   },
   root: async ({ question, state }) => {
-    const correct = await expr(question.expr).checkRoot(state.root)
+    const correct = await question.expr.checkRoot(state.root)
     return { correct, score: [0, 0], next: null }
   },
 })
 
 export const Factor = createView(schema, feedback, {
   start: (props) => {
-    const question = () => expr(props.question.expr)
-    const attempt = () => expr(props.state?.attempt)
+    const question = createMemo(() => props.question.expr)
+    const attempt = createMemo(() => props.state?.attempt)
     const answer = createMemo(() => attempt() && question().factor().latex())
     const equal = createMemo(() => attempt()?.isEqual(question()))
     const factored = createMemo(() => attempt()?.isFactored())
@@ -50,15 +59,14 @@ export const Factor = createView(schema, feedback, {
     const exercise = useExerciseContext()
     return (
       <>
-        <p>Factorisez l'expression suivante: {props.question.expr}</p>
+        <p>Factorisez l'expression suivante: {props.question.expr.rawInput}</p>
         <p>
           Tentative:{' '}
           <input
-            value={props.state?.attempt ?? ''}
+            value={props.state?.attempt.rawInput ?? ''}
             readonly={props.state !== undefined}
             onInput={(e) => {
-              // @ts-ignore
-              exercise.setState((state) => {
+              exercise?.setState((state) => {
                 state.attempt = e.target.value
               })
             }}
@@ -75,17 +83,14 @@ export const Factor = createView(schema, feedback, {
   },
   root: (props) => {
     const exercise = useExerciseContext()
-    const correct = createMemo(
-      () => props.state && expr(props.question.expr).checkRoot(props.state?.root ?? ''),
-    )
+    const correct = createMemo(() => props.state && props.question.expr.checkRoot(props.state.root))
     return (
       <>
-        <p>Trouvez une racine de {props.question.expr}</p>
+        <p>Trouvez une racine de {props.question.expr.rawInput}</p>
         <input
-          value={props.state?.root ?? ''}
+          value={props.state?.root.rawInput ?? ''}
           onInput={(e) => {
-            // @ts-ignore
-            exercise.setState((state) => {
+            exercise?.setState((state) => {
               state.root = e.target.value
             })
           }}

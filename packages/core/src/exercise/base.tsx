@@ -1,5 +1,5 @@
 import { Dynamic } from '@solidjs/web'
-import { mapAsync } from 'es-toolkit'
+import { mapAsync, mapValues } from 'es-toolkit'
 import {
   createMemo,
   createStore,
@@ -14,8 +14,24 @@ import * as v from 'valibot'
 import { ExerciseContext } from './context'
 
 type MaybeAsync<T> = T | Promise<T>
-type RawShape = Record<string, v.BaseSchema<any, any, any>>
-type InferFromShape<T extends RawShape> = v.InferOutput<v.ObjectSchema<T, undefined>>
+
+type Field<T = any, U = any> = {
+  base: v.GenericSchema<any, T>
+  feedback: v.GenericSchema<T, U>
+}
+
+export function defineField<T, U>(field: Field<T, U>) {
+  return field
+}
+
+type RawShape = Record<string, Field>
+function RawShapeSchema<T extends RawShape, S extends 'base' | 'feedback'>(shape: T, stage: S) {
+  return v.object(mapValues(shape, (field) => field[stage]) as { [K in keyof T]: T[K][S] })
+}
+
+type InferFromShape<T extends Record<string, Field>, S extends 'base' | 'feedback'> = v.InferOutput<
+  ReturnType<typeof RawShapeSchema<T, S>>
+>
 
 /**
  * Infer the type associated with a schema factory
@@ -43,7 +59,7 @@ type Infer<
 export function defineSchema<
   const N extends string,
   Q extends RawShape,
-  T extends (question: InferFromShape<Q>) => Promise<InferFromShape<Q>>,
+  T extends (question: InferFromShape<Q, 'feedback'>) => Promise<InferFromShape<Q, 'base'>>,
   const S extends Record<string, { previous: (keyof S)[]; state: RawShape }> & {
     start: { previous: []; state: RawShape }
   },
@@ -54,53 +70,63 @@ export function defineSchema<
 type Schema<
   N extends string = any,
   Q extends RawShape = any,
-  T extends (question: InferFromShape<Q>) => Promise<InferFromShape<Q>> = any,
+  T extends (question: InferFromShape<Q, 'feedback'>) => Promise<InferFromShape<Q, 'base'>> = any,
   S extends Record<string, { previous: (keyof S)[]; state: RawShape }> & {
     start: { previous: []; state: RawShape }
   } = any,
 > = ReturnType<typeof defineSchema<N, Q, T, S>>
 
-function Part<T extends Schema, K extends keyof T['steps'], S extends boolean = false>(
-  schema: T,
-  step: K,
-  withState?: S,
-) {
+function Part<
+  T extends Schema,
+  K extends keyof T['steps'],
+  S extends boolean = false,
+  V extends 'base' | 'feedback' = 'base',
+>(schema: T, step: K, withState?: S, stage?: V) {
   const base = v.object({
     step: v.literal(step as K),
   })
   const extended = v.object({
     ...base.entries,
-    state: v.object(schema.steps[step].state as T['steps'][K]['state']),
+    state: RawShapeSchema(schema.steps[step].state as T['steps'][K]['state'], stage ?? 'base'),
   })
   return (withState ? extended : base) as S extends true ? typeof extended : typeof base
 }
 
-type Part<T extends Schema, K extends keyof T['steps'], S extends boolean = false> = Infer<
-  typeof Part<T, K, S>
->
+type Part<
+  T extends Schema,
+  K extends keyof T['steps'],
+  S extends boolean = false,
+  V extends 'base' | 'feedback' = 'base',
+> = Infer<typeof Part<T, K, S, V>>
 
 function PartUnion<
   T extends Schema,
   K extends readonly (keyof T['steps'])[],
   S extends boolean = false,
->(schema: T, steps: K, withState?: S) {
+  V extends 'base' | 'feedback' = 'base',
+>(schema: T, steps: K, withState?: S, stage?: V) {
   return v.variant(
     'step',
-    steps.map((step) => Part(schema, step, withState)),
-  ) as v.VariantSchema<'step', { [I in keyof K]: ReturnType<typeof Part<T, K[I], S>> }, undefined>
+    steps.map((step) => Part(schema, step, withState, stage)),
+  ) as v.VariantSchema<
+    'step',
+    { [I in keyof K]: ReturnType<typeof Part<T, K[I], S, V>> },
+    undefined
+  >
 }
 
 type PartUnion<
   T extends Schema,
   K extends readonly (keyof T['steps'])[] = readonly (keyof T['steps'])[],
   S extends boolean = false,
-> = Infer<typeof PartUnion<T, K, S>>
+  V extends 'base' | 'feedback' = 'base',
+> = Infer<typeof PartUnion<T, K, S, V>>
 
 type Props<T extends Schema, K extends keyof T['steps'], F extends boolean = true> = {
-  question: InferFromShape<T['question']>
-  state?: InferFromShape<T['steps'][K]['state']>
+  question: InferFromShape<T['question'], 'feedback'>
+  state?: InferFromShape<T['steps'][K]['state'], 'feedback'>
   previous: {
-    [S in T['steps'][K]['previous'][number]]: InferFromShape<T['steps'][S]['state']>
+    [S in T['steps'][K]['previous'][number]]: InferFromShape<T['steps'][S]['state'], 'feedback'>
   }[T['steps'][K]['previous'][number]][]
 } & (F extends true ? Partial<{ correct: boolean; score: [number, number] }> : {})
 
@@ -114,32 +140,41 @@ export function defineFeedback<T extends Schema>(data: {
   return data
 }
 
+function Attempt<T extends Schema, V extends 'base' | 'feedback'>(schema: T, stage: V) {
+  const steps = Object.keys(schema.steps) as T['steps'][keyof T['steps']]
+  return v.array(
+    v.union([PartUnion(schema, steps, true, stage), PartUnion(schema, steps, false, stage)]),
+  )
+}
+
 export function buildSchemas<T extends Schema>(
   schema: T,
   feedback: ReturnType<typeof defineFeedback<T>>,
 ) {
-  const steps = Object.keys(schema.steps) as T['steps'][keyof T['steps']]
   return {
     Student: v.pipeAsync(
       v.object({
         name: v.literal(schema.name as T['name']),
-        question: v.object(schema.question as T['question']),
-        attempt: v.array(
-          v.union([PartUnion(schema, steps, true), PartUnion(schema, steps, false)]),
-        ),
+        question: RawShapeSchema(schema.question as T['question'], 'base'),
+        attempt: Attempt(schema, 'base'),
       }),
       // TODO: calls need to be deduped, waiting for solid-router release?
       v.transformAsync(async ({ attempt, question, ...exercise }) => {
+        const parsedQuestion = v.parse(
+          RawShapeSchema(schema.question as T['question'], 'feedback'),
+          question,
+        )
+        const parsedAttempt = v.parse(Attempt(schema, 'feedback'), attempt)
         let modifiedAttempt = attempt
         if (attempt.length === 0 && schema.transform) {
-          question = await schema.transform(question)
+          question = await schema.transform(parsedQuestion)
         }
         modifiedAttempt = await mapAsync(modifiedAttempt, async (part, i) => {
-          if ('state' in part && part.state) {
+          if ('state' in part && 'state' in parsedAttempt[i]! && part.state) {
             const result = await feedback[part.step]({
-              question: question,
-              state: part.state,
-              previous: modifiedAttempt.slice(0, i).toReversed() as any,
+              question: parsedQuestion,
+              state: parsedAttempt[i]!.state ?? part.state,
+              previous: parsedAttempt.slice(0, i).toReversed() as any,
             })
             return { ...part, ...result }
           }
@@ -176,10 +211,13 @@ export function createView<T extends Schema>(
   const { Student, grade } = buildSchemas(schema, feedback)
   return function Component(props: FinalViewProps<T>) {
     const exercise = createMemo(async () => grade(await props.fetch()))
+    const parsedQuestion = createMemo(() =>
+      v.parse(RawShapeSchema(schema.question as T['question'], 'feedback'), exercise().question),
+    )
+    const parsedAttempt = createMemo(() => v.parse(Attempt(schema, 'feedback'), exercise().attempt))
     return (
       <Loading fallback="Génération de l'exercice...">
-        <p>{exercise().attempt.length} étapes</p>
-        <For each={exercise().attempt}>
+        <For each={parsedAttempt()}>
           {<K extends keyof T['steps']>(
             part: () =>
               | Part<T, K, true>
@@ -195,23 +233,22 @@ export function createView<T extends Schema>(
             )
             const submit = async () => {
               if (!validated().success) return
-              await props.save(
-                await grade({
-                  ...exercise(),
-                  attempt: [
-                    ...exercise().attempt.toSpliced(-1),
-                    validated().output as Part<T, K, true>,
-                  ],
-                }),
-              )
+              const graded = await grade({
+                ...exercise(),
+                attempt: [
+                  ...exercise().attempt.toSpliced(-1),
+                  validated().output as Part<T, K, true>,
+                ],
+              })
+              await props.save(graded)
               refresh(() => exercise)
             }
             return (
-              <ExerciseContext value={{ state, setState }}>
+              <ExerciseContext value={{ readOnly: !!part().state, state, setState }}>
                 <Dynamic
                   component={view[part().step]}
                   {...({
-                    question: exercise().question,
+                    question: parsedQuestion(),
                     state: part().state,
                     previous: exercise().attempt.slice(0, i()).toReversed() as any,
                   } satisfies Props<T, K> as ComponentProps<View<T>[K]>)}
