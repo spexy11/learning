@@ -21,6 +21,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/expr/degree': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Degree */
+    post: operations['degree_expr_degree_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/expr/equal': {
     parameters: {
       query?: never
@@ -49,6 +66,23 @@ export interface paths {
     put?: never
     /** Is Factored */
     post: operations['is_factored_expr_isFactored_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/expr/isPartialFractionDecomposition': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Is Partial Fraction Decomposition */
+    post: operations['is_partial_fraction_decomposition_expr_isPartialFractionDecomposition_post']
     delete?: never
     options?: never
     head?: never
@@ -187,6 +221,39 @@ export interface operations {
       }
     }
   }
+  degree_expr_degree_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OneExpression']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': number
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   equal_expr_equal_post: {
     parameters: {
       query?: never
@@ -221,6 +288,39 @@ export interface operations {
     }
   }
   is_factored_expr_isFactored_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OneExpression']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': boolean
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  is_partial_fraction_decomposition_expr_isPartialFractionDecomposition_post: {
     parameters: {
       query?: never
       header?: never

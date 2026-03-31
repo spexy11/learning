@@ -19,6 +19,7 @@ const integrateParams = v.union([
 const Math: v.GenericSchema<ExpressionInput> = v.union([
   v.pipe(
     v.string(),
+    v.check((expr) => ce.parse(expr).isValid, "Ceci n'est pas une expression mathématique valide"),
     v.transform((input) => ce.parse(input).json),
   ),
   v.number(),
@@ -52,6 +53,7 @@ function _expr(input: Math) {
       expr(json)
         .subs({ [x]: v.parse(Expression, root) })
         .isEqual(0),
+    degree: () => symapi.expr.degree({ expr: json }),
     diff: (x = 'x') => expr(['Derivative', json, x]),
     expand: () => expr(['Expand', json]),
     evaluate: () => ce.expr(json).evaluate(),
@@ -66,6 +68,8 @@ function _expr(input: Math) {
     isEqual: (other: Expression) =>
       symapi.expr.equal({ expr1: json, expr2: v.parse(Expression, other) }),
     isFactored: () => symapi.expr.isFactored({ expr: json }),
+    isPartialFractionDecomposition: () =>
+      symapi.expr.isPartialFractionDecomposition({ expr: json }),
     latex: () => symapi.expr.latex({ expr: json }),
     matches: (other: Expression) =>
       symapi.expr.match({ expr1: json, expr2: v.parse(Expression, other) }),
